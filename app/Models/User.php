@@ -32,19 +32,19 @@ class User extends Authenticatable
         ];
     }
 
-    // Зв'язок: Власник може мати багато закладів
+
     public function establishments()
     {
         return $this->hasMany(Establishment::class);
     }
 
-    // Зв'язок: Користувач може залишати відгуки
+
     public function reviews()
     {
         return $this->hasMany(Review::class);
     }
 
-    // Хелпер для перевірки ролі
+
     public function isAdmin(): bool
     {
         return strtolower($this->role) === 'admin';

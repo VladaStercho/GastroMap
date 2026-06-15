@@ -8,19 +8,18 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
+use Carbon\Carbon;
 
 class EstablishmentController extends Controller
 {
-    /**
-     * Головна сторінка з картою, пошуком та фільтрами
-     */
+
     public function index(Request $request)
     {
         $query = Establishment::query();
         $tableName = (new Establishment())->getTable();
 
         if (Schema::hasColumn($tableName, 'is_approved')) {
-            // $query->where('is_approved', true); // розкоментуйте якщо потрібна модерація
+            // Тут за потреби можна відфільтрувати лише схвалені
         }
 
         if ($request->filled('search')) {
@@ -82,55 +81,91 @@ class EstablishmentController extends Controller
         return view('welcome', compact('establishments'));
     }
 
-    /**
-     * Детальна сторінка закладу
-     */
+
     public function show($id)
     {
         $establishment = Establishment::with('reviews.user')->findOrFail($id);
 
-        $currentTime = now()->format('H:i');
+        // Поточний час в Україні
+        $now = Carbon::now('Europe/Kyiv');
+        $isWeekend = $now->isWeekend();
+        $currentTime = $now->format('H:i');
         $isOpen = false;
 
-        $openingTime = $establishment->opening_time ?? '09:00';
-        $closingTime = $establishment->closing_time ?? '22:00';
+        // Дефолтні значення годин роботи
+        $weekdayOpen = '09:00'; $weekdayClose = '22:00';
+        $weekendOpen = '10:00'; $weekendClose = '23:00';
 
-        $open  = date('H:i', strtotime($openingTime));
-        $close = date('H:i', strtotime($closingTime));
+        // Розклеюємо години для будніх днів (opening_time)
+        if (!empty($establishment->opening_time) && str_contains($establishment->opening_time, '-')) {
+            $parts = explode('-', $establishment->opening_time);
+            $weekdayOpen = date('H:i', strtotime($parts[0]));
+            $weekdayClose = date('H:i', strtotime($parts[1]));
+        }
 
-        if ($close < $open) {
-            if ($currentTime >= $open || $currentTime <= $close) $isOpen = true;
+        // Розклеюємо години для вихідних днів (closing_time)
+        if (!empty($establishment->closing_time) && str_contains($establishment->closing_time, '-')) {
+            $parts = explode('-', $establishment->closing_time);
+            $weekendOpen = date('H:i', strtotime($parts[0]));
+            $weekendClose = date('H:i', strtotime($parts[1]));
+        }
+
+        // Визначаємо графік на сьогодні залежно від дня тижня
+        $openToday = $isWeekend ? $weekendOpen : $weekdayOpen;
+        $closeToday = $isWeekend ? $weekendClose : $weekdayClose;
+
+        // Перевіряємо статус "Відчинено"
+        if ($closeToday < $openToday) {
+            // Якщо заклад закривається після опівночі (наприклад, з 18:00 до 02:00)
+            if ($currentTime >= $openToday || $currentTime <= $closeToday) {
+                $isOpen = true;
+            }
         } else {
-            if ($currentTime >= $open && $currentTime <= $close) $isOpen = true;
+            // Класичний денний графік (наприклад, з 09:00 до 22:00)
+            if ($currentTime >= $openToday && $currentTime <= $closeToday) {
+                $isOpen = true;
+            }
         }
 
         $hasSchedulesTable = Schema::hasTable('schedules');
         $fallbackDays = ['Понеділок', 'Вівторок', 'Середа', 'Четвер', "П'ятниця", 'Субота', 'Неділя'];
 
-        return view('show', compact('establishment', 'isOpen', 'hasSchedulesTable', 'fallbackDays', 'openingTime', 'closingTime'));
+        return view('show', compact(
+            'establishment',
+            'isOpen',
+            'hasSchedulesTable',
+            'fallbackDays',
+            'weekdayOpen',
+            'weekdayClose',
+            'weekendOpen',
+            'weekendClose',
+            'isWeekend'
+        ));
     }
 
-    /**
-     * Форма додавання нового закладу (тільки для owner)
-     */
+
     public function create()
     {
-        if (!Auth::check() || !Auth::user()->isOwner()) {
-            abort(403, 'Доступ тільки для власників закладів.');
+        if (!Auth::check() || (!Auth::user()->isOwner() && !Auth::user()->isAdmin())) {
+            abort(403, 'Доступ тільки для власників закладів або адміністраторів.');
         }
 
         $establishment = null;
         return view('owner.establishment-form', compact('establishment'));
     }
 
-    /**
-     * Збереження нового закладу (тільки для owner)
-     */
+
     public function store(Request $request)
     {
-        if (!Auth::check() || !Auth::user()->isOwner()) {
-            abort(403);
+        if (!Auth::check() || (!Auth::user()->isOwner() && !Auth::user()->isAdmin())) {
+            abort(403, 'Дія заборонена.');
         }
+
+        // Склеюємо години з окремих інпутів перед валідацією та збереженням
+        $request->merge([
+            'opening_time' => $request->weekday_open . '-' . $request->weekday_close,
+            'closing_time' => $request->weekend_open . '-' . $request->weekend_close,
+        ]);
 
         $data = $request->validate([
             'name'            => 'required|string|max:255',
@@ -148,57 +183,65 @@ class EstablishmentController extends Controller
             'laptop_friendly' => 'nullable|boolean',
             'latitude'        => 'nullable|numeric',
             'longitude'       => 'nullable|numeric',
+            'photos'          => 'required|array|min:3',
+            'photos.*'        => 'image|mimes:jpeg,png,jpg,webp|max:5120',
+        ], [
+            'photos.required' => 'Будь ласка, завантажте фотографії вашого закладу.',
+            'photos.min'      => 'Необхідно завантажити щонайменше 3 фотографії закладу.',
+            'photos.*.image'  => 'Кожен завантажений файл має бути зображенням.',
         ]);
 
-        // Чекбокси — якщо не відмічені, значення не передається, встановлюємо false
         $data['has_wifi']        = $request->boolean('has_wifi');
         $data['has_terrace']     = $request->boolean('has_terrace');
         $data['is_pet_friendly'] = $request->boolean('is_pet_friendly');
         $data['laptop_friendly'] = $request->boolean('laptop_friendly');
 
-        $data['user_id']    = Auth::id();
-        $data['is_approved'] = false; // Чекає схвалення адміна
+        $data['user_id']     = Auth::id();
+        $data['is_approved'] = Auth::user()->isAdmin() ? true : false;
+
+        $photoPaths = [];
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $photo) {
+                $path = $photo->store('establishments_photos', 'public');
+                $photoPaths[] = $path;
+            }
+        }
+
+        $data['photos'] = $photoPaths;
 
         Establishment::create($data);
 
-        return redirect()->route('dashboard')->with('success', 'Заклад "' . $data['name'] . '" подано на модерацію! Адмін скоро перевірить.');
+        return redirect()->route('dashboard')->with('success', 'Заклад успішно додано!');
     }
 
-    /**
-     * Форма редагування закладу (тільки власник цього закладу)
-     */
+
     public function edit($id)
     {
         $establishment = Establishment::findOrFail($id);
 
-        // Перевірка: або сам власник, або адмін
-        if (Auth::user()->isOwner() && $establishment->user_id !== Auth::id()) {
-            abort(403, 'Ви можете редагувати тільки свої заклади.');
-        }
-
-        if (!Auth::user()->isOwner() && !Auth::user()->isAdmin()) {
-            abort(403);
+        if (!Auth::user()->isAdmin() && $establishment->user_id !== Auth::id()) {
+            abort(403, 'Ви можете редагувати тільки свої заклади або ви не є адміністратором.');
         }
 
         return view('owner.establishment-form', compact('establishment'));
     }
 
-    /**
-     * Оновлення закладу (тільки власник цього закладу або адмін)
-     */
+
     public function update(Request $request, $id)
     {
         $establishment = Establishment::findOrFail($id);
 
-        if (Auth::user()->isOwner() && $establishment->user_id !== Auth::id()) {
-            abort(403);
+        if (!Auth::user()->isAdmin() && $establishment->user_id !== Auth::id()) {
+            abort(403, 'Дія дозволена тільки власнику закладу або адміністратору.');
         }
 
-        if (!Auth::user()->isOwner() && !Auth::user()->isAdmin()) {
-            abort(403);
-        }
+        // Склеюємо години з окремих інпутів перед валідацією та збереженням
+        $request->merge([
+            'opening_time' => $request->weekday_open . '-' . $request->weekday_close,
+            'closing_time' => $request->weekend_open . '-' . $request->weekend_close,
+        ]);
 
-        $data = $request->validate([
+        $rules = [
             'name'            => 'required|string|max:255',
             'type'            => 'required|in:cafe,restaurant,pub',
             'address'         => 'required|string|max:500',
@@ -214,6 +257,16 @@ class EstablishmentController extends Controller
             'laptop_friendly' => 'nullable|boolean',
             'latitude'        => 'nullable|numeric',
             'longitude'       => 'nullable|numeric',
+        ];
+
+        if ($request->hasFile('photos')) {
+            $rules['photos']   = 'required|array|min:3';
+            $rules['photos.*'] = 'image|mimes:jpeg,png,jpg,webp|max:5120';
+        }
+
+        $data = $request->validate($rules, [
+            'photos.min'     => 'Якщо ви оновлюєте фотографії, необхідно завантажити щонайменше 3 штуки.',
+            'photos.*.image' => 'Кожен завантажений файл має бути зображенням.',
         ]);
 
         $data['has_wifi']        = $request->boolean('has_wifi');
@@ -221,35 +274,58 @@ class EstablishmentController extends Controller
         $data['is_pet_friendly'] = $request->boolean('is_pet_friendly');
         $data['laptop_friendly'] = $request->boolean('laptop_friendly');
 
+        if ($request->hasFile('photos')) {
+            if ($establishment->photos && is_array($establishment->photos)) {
+                foreach ($establishment->photos as $oldPhoto) {
+                    Storage::disk('public')->delete($oldPhoto);
+                }
+            }
+
+            $photoPaths = [];
+            foreach ($request->file('photos') as $photo) {
+                $path = $photo->store('establishments_photos', 'public');
+                $photoPaths[] = $path;
+            }
+
+            $data['photos'] = $photoPaths;
+        }
+
         $establishment->update($data);
 
-        return redirect()->route('dashboard')->with('success', 'Заклад "' . $establishment->name . '" успішно оновлено!');
+        return redirect()->route('dashboard')->with('success', 'Заклад "' . $establishment->name . '" успешно оновлено!');
     }
 
-    /**
-     * Оновлення PDF-меню
-     */
+
     public function updateMenu(Request $request, $id)
     {
         $request->validate([
-            'menu_pdf' => 'required|file|mimes:pdf|max:10240',
+            'menu_pdf' => 'required|file|mimes:pdf|max:10240', // Обмеження до 10 МБ
+        ], [
+            'menu_pdf.required' => 'Будь ласка, виберіть файл.',
+            'menu_pdf.mimes'    => 'Меню має бути виключно у форматі PDF.',
+            'menu_pdf.max'      => 'Розмір файлу PDF не повинен перевищувати 10 МБ.',
         ]);
 
         $establishment = Establishment::findOrFail($id);
 
-        // Тільки власник або адмін
-        if (Auth::user()->isOwner() && $establishment->user_id !== Auth::id()) {
-            abort(403);
+        // Перевірка прав: дію дозволено тільки адміну або фактичному власнику цього закладу
+        if (!Auth::user()->isAdmin() && $establishment->user_id !== Auth::id()) {
+            abort(403, 'Недостатньо прав для оновлення цифрового меню цього закладу.');
         }
 
         if ($request->hasFile('menu_pdf')) {
-            if ($establishment->menu_pdf) {
+            // Якщо старий PDF-файл існує в сховищі, видаляємо його для економії місця
+            if ($establishment->menu_pdf && Storage::disk('public')->exists($establishment->menu_pdf)) {
                 Storage::disk('public')->delete($establishment->menu_pdf);
             }
+
+            // Зберігаємо новий файл у папку storage/app/public/menus
             $path = $request->file('menu_pdf')->store('menus', 'public');
+
+            // Оновлюємо шлях до файлу в базі даних
             $establishment->update(['menu_pdf' => $path]);
         }
 
-        return redirect()->back()->with('success', 'Цифрове меню успішно оновлено!');
+        return redirect()->back()->with('success', 'Цифрове меню закладу успішно завантажено!');
     }
 }

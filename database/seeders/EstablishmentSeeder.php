@@ -9,10 +9,10 @@ class EstablishmentSeeder extends Seeder
 {
     public function run(): void
     {
-        // Очищаємо таблицю перед заповненням
+
         Establishment::truncate();
 
-        // 1. Заклади в Ужгороді
+
         Establishment::create([
             'name' => 'Кав’ярня "Riverside"',
             'search_keywords' => 'riverside, ріверсайд, ріксайд, риверсайд, рівер, сайд, набережна, кавʼярня біля річки', // Усі варіанти для Укр пошуку
@@ -31,7 +31,7 @@ class EstablishmentSeeder extends Seeder
             'is_approved' => true,
         ]);
 
-        // 2. Заклади в Мукачеві
+
         Establishment::create([
             'name' => 'Ресторан "Daily"',
             'search_keywords' => 'daily, дейлі, дайлі, деілі, даілі, дейли, дейлі комбо', // Варіанти написання кирилицею
@@ -50,7 +50,7 @@ class EstablishmentSeeder extends Seeder
             'is_approved' => true,
         ]);
 
-        // 3. Заклади в Хусті
+
         Establishment::create([
             'name' => 'Паб "Хустський Замок"',
             'search_keywords' => 'хустський замок, замок, паб замок, хуст замок, пиво замок',

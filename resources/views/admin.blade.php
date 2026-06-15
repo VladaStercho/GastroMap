@@ -248,7 +248,7 @@
                                     <td class="py-3 px-4 text-right">
                                         <form action="{{ route('admin.review.delete', $review->id) }}" method="POST" onsubmit="return confirm('Видалити цей відгук?')">
                                             @csrf @method('DELETE')
-                                            <button type="submit" class="text-red-500 font-bold hover:underline cursor-pointer">Видалити</button>
+                                            <button type="submit" class="text-red-500 font-bold hover:underline cursor-pointer">Вилити</button>
                                         </form>
                                     </td>
                                 </tr>

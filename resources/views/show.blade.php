@@ -36,7 +36,6 @@
             }
         }
 
-        // Автоматична перевірка обраного при завантаженні сторінки
         document.addEventListener("DOMContentLoaded", function() {
             const id = "{{ $establishment->id ?? 1 }}";
             let favorites = JSON.parse(localStorage.getItem('user_favorites')) || [];
@@ -52,7 +51,6 @@
             }
         });
 
-        // Додавання або видалення з обраного
         function toggleFavorite() {
             const id = "{{ $establishment->id ?? 1 }}";
             const name = "{{ $establishment->name ?? 'Заклад без назви' }}";
@@ -65,13 +63,11 @@
             const btn = document.getElementById('fav-btn');
 
             if (index > -1) {
-                // Видаляємо з обраного
                 favorites.splice(index, 1);
                 icon.classList.remove('fa-solid', 'text-red-500');
                 icon.classList.add('fa-regular', 'text-gray-400', 'dark:text-gray-500');
                 btn.classList.remove('bg-red-50', 'dark:bg-red-950/20', 'border-red-200', 'dark:border-red-900/50');
             } else {
-                // Додаємо в обране
                 favorites.push({ id, name, address, price });
                 icon.classList.remove('fa-regular', 'text-gray-400', 'dark:text-gray-500');
                 icon.classList.add('fa-solid', 'text-red-500');
@@ -148,6 +144,26 @@
             </div>
         @endif
 
+        {{-- ПІДГОТОВКА ФОТОГРАФІЙ --}}
+        @php
+            $displayPhotos = [];
+            if (!empty($establishment->photos) && is_array($establishment->photos)) {
+                foreach ($establishment->photos as $p) {
+                    $displayPhotos[] = asset('storage/' . $p);
+                }
+            }
+
+            $fallbacks = [
+                "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1200&q=80",
+                "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=80",
+                "https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=1200&q=80"
+            ];
+
+            for ($i = count($displayPhotos); $i < 3; $i++) {
+                $displayPhotos[] = $fallbacks[$i] ?? $fallbacks[0];
+            }
+        @endphp
+
         <div class="bg-white dark:bg-gray-900 p-3 rounded-3xl shadow-xs border border-gray-100 dark:border-gray-800 space-y-3">
             <div class="flex items-center justify-between px-2 pt-1">
                 <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
@@ -159,9 +175,10 @@
                 </span>
             </div>
 
+            {{-- Десктопна галерея --}}
             <div class="hidden md:grid grid-cols-3 gap-3 min-h-[380px] max-h-[420px] rounded-2xl overflow-hidden">
                 <div class="col-span-2 bg-gray-900 flex items-center justify-center relative group overflow-hidden cursor-pointer" onclick="openLightbox(0)">
-                    <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1200&q=80" class="w-full h-full object-cover group-hover:scale-[1.03] transition duration-500" alt="Основне photo">
+                    <img src="{{ $displayPhotos[0] }}" class="w-full h-full object-cover group-hover:scale-[1.03] transition duration-500" alt="Основне photo">
                     <div class="absolute inset-0 bg-black/20 group-hover:bg-black/20 transition duration-300 flex items-center justify-center">
                         <i class="fa-solid fa-magnifying-glass-plus text-white text-3xl opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition duration-300"></i>
                     </div>
@@ -169,26 +186,29 @@
 
                 <div class="grid grid-rows-2 gap-3 h-full">
                     <div class="bg-gray-900 flex items-center justify-center overflow-hidden relative group cursor-pointer" onclick="openLightbox(1)">
-                        <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80" class="w-full h-full object-cover group-hover:scale-[1.03] transition duration-500" alt="Зал">
+                        <img src="{{ $displayPhotos[1] }}" class="w-full h-full object-cover group-hover:scale-[1.03] transition duration-500" alt="Зал">
                         <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition duration-300 flex items-center justify-center">
                             <i class="fa-solid fa-magnifying-glass-plus text-white text-2xl opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition duration-300"></i>
                         </div>
                     </div>
                     <div class="bg-gray-900 flex items-center justify-center overflow-hidden relative group cursor-pointer" onclick="openLightbox(2)">
-                        <img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=600&q=80" class="w-full h-full object-cover group-hover:scale-[1.03] transition duration-500" alt="Деталі">
+                        <img src="{{ $displayPhotos[2] }}" class="w-full h-full object-cover group-hover:scale-[1.03] transition duration-500" alt="Деталі">
                         <div class="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition duration-300 flex flex-col items-center justify-center text-white gap-1.5">
                             <i class="fa-solid fa-expand text-xl"></i>
-                            <span class="font-bold text-xs uppercase tracking-wider">Дивитись усі</span>
+                            <span class="font-bold text-xs uppercase tracking-wider">Дивитись усі ({{ count($displayPhotos) }})</span>
                         </div>
                     </div>
                 </div>
             </div>
 
+            {{-- Мобільний слайдер --}}
             <div class="block md:hidden relative w-full h-64 overflow-hidden rounded-2xl bg-gray-900 mobile-detail-slider" data-current="0">
-                <div class="flex h-full w-[300%] slides-container">
-                    <div class="w-1/3 h-full flex items-center justify-center bg-gray-900 cursor-pointer" onclick="openLightbox(0)"><img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=500&q=80" class="w-full h-full object-cover" alt="Слайд 1"></div>
-                    <div class="w-1/3 h-full flex items-center justify-center bg-gray-900 cursor-pointer" onclick="openLightbox(1)"><img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&q=80" class="w-full h-full object-cover" alt="Слайд 2"></div>
-                    <div class="w-1/3 h-full flex items-center justify-center bg-gray-900 cursor-pointer" onclick="openLightbox(2)"><img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=500&q=80" class="w-full h-full object-cover" alt="Слайд 3"></div>
+                <div class="flex h-full slides-container" style="width: {{ count($displayPhotos) * 100 }}%;">
+                    @foreach($displayPhotos as $index => $photoUrl)
+                        <div class="h-full flex items-center justify-center bg-gray-900 cursor-pointer" style="width: {{ 100 / count($displayPhotos) }}%;" onclick="openLightbox({{ $index }})">
+                            <img src="{{ $photoUrl }}" class="w-full h-full object-cover" alt="Слайд {{ $index + 1 }}">
+                        </div>
+                    @endforeach
                 </div>
                 <button type="button" onclick="changeMobileSlide(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 text-white w-9 h-9 rounded-full flex items-center justify-center text-sm backdrop-blur-xs shadow-xs">&#10094;</button>
                 <button type="button" onclick="changeMobileSlide(1)" class="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 text-white w-9 h-9 rounded-full flex items-center justify-center text-sm backdrop-blur-xs shadow-xs">&#10095;</button>
@@ -211,50 +231,34 @@
                                     </button>
                                 @endauth
                             </div>
-                            <p class="text-sm font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                                <i class="fa-solid fa-location-dot text-orange-500 text-base"></i> {{ $establishment->address ?? 'Адреса відсутня' }}
-                            </p>
+
+                            {{-- Адреса закладу + Секретне текстове посилання для адміністратора та власника --}}
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-x-3 gap-y-1">
+                                <p class="text-sm font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                                    <i class="fa-solid fa-location-dot text-orange-500 text-base"></i> {{ $establishment->address ?? 'Адреса відсутня' }}
+                                </p>
+
+                                {{-- ВИПРАВЛЕНО: Адмін бачить кнопку абсолютно скрізь, а власник — тільки на своїх закладах --}}
+                                @if(Auth::check() && (strtolower(Auth::user()->role) === 'admin' || (strtolower(Auth::user()->role) === 'owner' && $establishment->user_id === Auth::id())))
+                                    <span class="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
+                                    @if(strtolower(Auth::user()->role) === 'admin')
+                                        <a href="{{ route('admin.establishment.edit', $establishment->id) }}"
+                                           class="text-[11px] font-medium text-blue-500/80 hover:text-blue-500 hover:underline transition duration-150 tracking-wide">
+                                            редагувати
+                                        </a>
+                                    @else
+                                        <a href="{{ route('owner.establishment.edit', $establishment->id) }}"
+                                           class="text-[11px] font-medium text-blue-500/80 hover:text-blue-500 hover:underline transition duration-150 tracking-wide">
+                                            редагувати
+                                        </a>
+                                    @endif
+                                @endif
+                            </div>
                         </div>
 
                         <div class="shrink-0">
-                            @php
-                                $now = \Carbon\Carbon::now();
-                                $currentTime = $now->format('H:i');
-                                $dayOfWeek = $now->dayOfWeek;
-
-                                $openTime = '08:00';
-                                $closeTime = '19:00';
-                                $isClosedToday = false;
-
-                                if (isset($hasSchedulesTable) && $hasSchedulesTable && method_exists($establishment, 'schedules') && $establishment->schedules->count() > 0) {
-                                    $daysMap = [
-                                        'Понеділок' => 1, 'Вівторок' => 2, 'Середа' => 3, 'Четвер' => 4, 'П\'ятниця' => 5, 'Субота' => 6, 'Неділя' => 7,
-                                        'Пн' => 1, 'Вв' => 2, 'Ср' => 3, 'Чт' => 4, 'Пт' => 5, 'Сб' => 6, 'Нд' => 7
-                                    ];
-
-                                    $todaySchedule = $establishment->schedules->filter(function($s) use ($dayOfWeek, $daysMap) {
-                                        return ($daysMap[$s->day_of_week] ?? null) == $dayOfWeek;
-                                    })->first();
-
-                                    if ($todaySchedule) {
-                                        $isClosedToday = $todaySchedule->is_closed;
-                                        $openTime = \Carbon\Carbon::parse($todaySchedule->open_time)->format('H:i');
-                                        $closeTime = \Carbon\Carbon::parse($todaySchedule->close_time)->format('H:i');
-                                    }
-                                }
-
-                                if ($isClosedToday) {
-                                    $isCurrentlyOpen = false;
-                                } else {
-                                    if ($openTime <= $closeTime) {
-                                        $isCurrentlyOpen = ($currentTime >= $openTime && $currentTime < $closeTime);
-                                    } else {
-                                        $isCurrentlyOpen = ($currentTime >= $openTime || $currentTime < $closeTime);
-                                    }
-                                }
-                            @endphp
-
-                            @if($isCurrentlyOpen)
+                            {{-- СТАТУС ВІДЧИНЕНО/ЗАЧИНЕНО --}}
+                            @if($isOpen)
                                 <span class="bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-full text-xs font-black flex items-center gap-2 shadow-xs w-fit">
                                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> ВІДЧИНЕНО
                                 </span>
@@ -326,36 +330,34 @@
             </div>
 
             <div class="space-y-6">
+                {{-- РОЗКЛАД РОБОТИ --}}
                 <div class="bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-xs border border-gray-100 dark:border-gray-800 space-y-4">
                     <h3 class="text-xs font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-2 pb-1 border-b border-gray-50 dark:border-gray-800">
-                        <i class="fa-regular fa-clock text-orange-500 text-sm"></i> Розклад роботи
+                        <i class="fa-regular fa-clock text-orange-500 text-sm"></i> Розклад годин роботи
                     </h3>
-                    <div class="space-y-3 text-xs pl-0.5">
-                        @if(isset($hasSchedulesTable) && $hasSchedulesTable && method_exists($establishment, 'schedules') && $establishment->schedules->count() > 0)
-                            @foreach($establishment->schedules as $sched)
-                                <div class="flex justify-between items-center py-1 border-b border-gray-50/70 dark:border-gray-800/60 last:border-0 gap-4">
-                                    <span class="font-bold text-gray-600 dark:text-gray-400 shrink-0">{{ $sched->day_of_week }}</span>
-                                    @if($sched->is_closed)
-                                        <span class="text-rose-500 font-black uppercase tracking-wide bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-md shrink-0">Зачинено</span>
-                                    @else
-                                        <span class="font-medium text-gray-800 dark:text-gray-300 text-right whitespace-nowrap">з <span class="font-black">{{ \Carbon\Carbon::parse($sched->open_time)->format('G:i') }}</span> до <span class="font-black">{{ \Carbon\Carbon::parse($sched->close_time)->format('G:i') }}</span></span>
-                                    @endif
-                                </div>
-                            @endforeach
-                        @else
-                            <div class="flex items-center justify-between py-1 gap-4">
-                                <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400 font-bold shrink-0">
-                                    <i class="fa-regular fa-calendar-check text-emerald-500 text-[13px]"></i> Щодня (без вихідних)
-                                </div>
-                                <div class="text-gray-800 dark:text-gray-200 font-medium tracking-wide text-right whitespace-nowrap">
-                                    з <span class="font-black">8:00</span> до <span class="font-black">19:00</span>
-                               </div>
-                            </div>
-                        @endif
+                    <div class="space-y-2.5 text-xs">
+                        <div class="flex items-center justify-between p-2.5 rounded-2xl bg-gray-50/70 dark:bg-gray-800/20 border border-gray-100/50 dark:border-gray-800/50 {{ !$isWeekend ? 'border-l-4 border-orange-500 pl-2' : '' }}">
+                            <span class="font-bold text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-calendar-days text-[11px] text-gray-400"></i> Будні (Пн — Пт)
+                            </span>
+                            <span class="font-black text-gray-900 dark:text-gray-200 text-sm">
+                                {{ $weekdayOpen }} – {{ $weekdayClose }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between p-2.5 rounded-2xl bg-gray-50/70 dark:bg-gray-800/20 border border-gray-100/50 dark:border-gray-800/50 {{ $isWeekend ? 'border-l-4 border-orange-500 pl-2' : '' }}">
+                            <span class="font-bold text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-umbrella-beach text-[11px] text-gray-400"></i> Вихідні (Сб — Нд)
+                            </span>
+                            <span class="font-black text-gray-900 dark:text-gray-200 text-sm">
+                                {{ $weekendOpen }} – {{ $weekendClose }}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-900 p-5 rounded-3xl shadow-xs border border-gray-100 dark:border-gray-800 text-center space-y-3.5">
+                {{-- ЦИФРОВЕ МЕНЮ (ПЕРЕГЛЯД ТА ЗАВАНТАЖЕННЯ) --}}
+                <div class="bg-white dark:bg-gray-900 p-5 rounded-3xl shadow-xs border border-gray-100 dark:border-gray-800 text-center space-y-4">
                     <div class="w-12 h-12 bg-orange-50 dark:bg-orange-950/30 text-orange-500 rounded-2xl flex items-center justify-center mx-auto text-xl shadow-xs">
                         <i class="fa-solid fa-book-open"></i>
                     </div>
@@ -372,6 +374,25 @@
                         <button disabled class="w-full bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 cursor-not-allowed uppercase tracking-wider">
                             <i class="fa-solid fa-ban text-sm"></i> Меню відсутнє
                         </button>
+                    @endif
+
+                    {{-- Секретна форма завантаження меню для Адміна або Власника (Owner) --}}
+                    @if(Auth::check() && (strtolower(Auth::user()->role) === 'admin' || (strtolower(Auth::user()->role) === 'owner' && $establishment->user_id === Auth::id())))
+                        <div class="mt-2 pt-4 border-t border-gray-100 dark:border-gray-800 text-left">
+                            <span class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Управління меню (Адмін/Власник)</span>
+
+                            @if(Route::has('establishment.menu.update'))
+                                <form action="{{ route('establishment.menu.update', $establishment->id) }}" method="POST" enctype="multipart/form-data" class="space-y-2">
+                            @else
+                                <form action="/establishments/{{ $establishment->id }}/update-menu" method="POST" enctype="multipart/form-data" class="space-y-2">
+                            @endif
+                                @csrf
+                                <label class="block w-full cursor-pointer bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700/60 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-center transition">
+                                    <span class="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Оберіть PDF файл...</span>
+                                    <input type="file" name="menu_pdf" accept="application/pdf" required class="hidden" onchange="this.form.submit()">
+                                </label>
+                            </form>
+                        </div>
                     @endif
                 </div>
 
@@ -433,7 +454,7 @@
                                 </div>
                             </div>
                             <div class="space-y-1">
-                                <textarea name="text" rows="4" required class="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-3 text-xs focus:outline-none focus:border-orange-500 transition placeholder:text-gray-400 dark:text-gray-200 resize-none" placeholder="Розкажіть детальніше про ваші враження від кухні, обслуговування чи інтер'єру..."></textarea>
+                                <textarea name="text" rows="4" required class="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-3 text-xs focus:outline-none focus:border-orange-500 transition placeholder:text-gray-400 dark:text-gray-200 resize-none" placeholder="Розкажіть детальніше про ваші враження..."></textarea>
                             </div>
                             <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-3 rounded-2xl text-xs transition uppercase tracking-wider shadow-xs hover:shadow cursor-pointer">Надіслати</button>
                         </form>
@@ -521,11 +542,7 @@
             }
         }
 
-        const imagesArray = [
-            "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1200&q=80",
-            "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=80",
-            "https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=1200&q=80"
-        ];
+        const imagesArray = @json($displayPhotos);
         let currentImageIndex = 0;
 
         function openLightbox(index) {
@@ -568,10 +585,13 @@
             const container = sliderRoot.querySelector('.slides-container');
             let current = parseInt(sliderRoot.getAttribute('data-current')) || 0;
             current += direction;
-            if (current >= 3) current = 0;
-            if (current < 0) current = 2;
+
+            const totalSlides = imagesArray.length;
+            if (current >= totalSlides) current = 0;
+            if (current < 0) current = totalSlides - 1;
+
             sliderRoot.setAttribute('data-current', current);
-            container.style.transform = `translateX(-${current * 33.333}%)`;
+            container.style.transform = `translateX(-${current * (100 / totalSlides)}%)`;
         }
     </script>
 </body>

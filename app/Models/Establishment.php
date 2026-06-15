@@ -29,6 +29,7 @@ class Establishment extends Model
         'menu_pdf',
         'opening_time',
         'closing_time',
+        'photos',
     ];
 
     protected $casts = [
@@ -37,21 +38,19 @@ class Establishment extends Model
         'is_pet_friendly'=> 'boolean',
         'laptop_friendly'=> 'boolean',
         'is_approved'    => 'boolean',
+        'photos'         => 'array', // Автоматично перетворює JSON з бази в масив PHP
     ];
 
-    // Власник закладу
     public function owner()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // Відгуки
     public function reviews()
     {
         return $this->hasMany(Review::class);
     }
 
-    // Розклад
     public function schedules()
     {
         return $this->hasMany(Schedule::class);

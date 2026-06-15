@@ -46,20 +46,20 @@
         }
 
         function switchTab(tabId, element) {
-            // Ховаємо всі вкладки
+
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
 
-            // Показуємо потрібну
+
             const target = document.getElementById('tab-' + tabId);
             if (target) target.classList.remove('hidden');
 
-            // Скидаємо стилі всіх кнопок
+
             document.querySelectorAll('.sidebar-nav-btn').forEach(btn => {
                 btn.classList.remove('bg-orange-500', 'text-white', 'font-bold', 'shadow-sm');
                 btn.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-50', 'dark:hover:bg-gray-900', 'font-semibold');
             });
 
-            // Активна кнопка
+
             element.classList.remove('text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-50', 'dark:hover:bg-gray-900', 'font-semibold');
             element.classList.add('bg-orange-500', 'text-white', 'font-bold', 'shadow-sm');
         }

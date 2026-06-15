@@ -137,7 +137,6 @@
     </style>
 
     <script>
-        // Скрипт миттєвого визначення теми до рендеру сторінки
         (function () {
             const theme = localStorage.getItem('theme') || 'light';
             if (theme === 'dark') {
@@ -147,7 +146,6 @@
             }
         })();
 
-        // Функція перемикання
         function toggleTheme() {
             const html = document.documentElement;
             if (html.classList.contains('dark')) {
@@ -270,6 +268,24 @@
                         $estCheck = $est->average_check ?? $est->середній_чек ?? 0;
                         $reviewsCount = $est->reviews ? $est->reviews->count() : 0;
                         $routeExist = Route::has('establishments.show') ? 'establishments.show' : (Route::has('establishment.show') ? 'establishment.show' : null);
+
+                        // ПІДГОТОВКА ЗОБРАЖЕНЬ: Перевіряємо фото з бази, якщо немає — добираємо красиві Unsplash-заглушки
+                        $cardPhotos = [];
+                        if (!empty($est->photos) && is_array($est->photos)) {
+                            foreach ($est->photos as $p) {
+                                $cardPhotos[] = asset('storage/' . $p);
+                            }
+                        }
+
+                        $fallbacks = [
+                            "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&q=80",
+                            "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&q=80",
+                            "https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=400&q=80"
+                        ];
+
+                        for ($i = count($cardPhotos); $i < 3; $i++) {
+                            $cardPhotos[] = $fallbacks[$i];
+                        }
                     @endphp
 
                     <div class="establishment-card border p-4 rounded-2xl hover:border-orange-400 dark:hover:border-orange-500/50 transition duration-200 cursor-pointer shadow-xs relative group" onclick="focusOnMap({{ $cardLat }}, {{ $cardLng }})">
@@ -280,11 +296,14 @@
                         <h3 class="font-bold pr-14 text-base group-hover:text-orange-600 dark:group-hover:text-orange-500 transition-colors">{{ $est->name }}</h3>
                         <p class="text-xs mt-1 flex items-center gap-1"><i class="fa-solid fa-location-dot"></i> {{ $estAddress }}</p>
 
+                        {{-- Оновлений слайдер картинок закладу --}}
                         <div class="relative w-full h-32 mt-3 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800 interaction-slider" data-current="0">
                             <div class="flex h-full w-[300%] slides-container">
-                                <div class="w-1/3 h-full"><img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&q=80" class="w-full h-full object-cover" alt="Інтер'єр"></div>
-                                <div class="w-1/3 h-full"><img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&q=80" class="w-full h-full object-cover" alt="Зал"></div>
-                                <div class="w-1/3 h-full"><img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=400&q=80" class="w-full h-full object-cover" alt="Деталі"></div>
+                                @foreach($cardPhotos as $pUrl)
+                                    <div class="w-1/3 h-full">
+                                        <img src="{{ $pUrl }}" class="w-full h-full object-cover" alt="Фото закладу">
+                                    </div>
+                                @endforeach
                             </div>
                             <button type="button" onclick="event.stopPropagation(); changeCardSlide(this, -1)" class="absolute left-1.5 top-1/2 -translate-y-1/2 bg-black/30 dark:bg-black/50 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs select-none backdrop-blur-xs transition">&#10094;</button>
                             <button type="button" onclick="event.stopPropagation(); changeCardSlide(this, 1)" class="absolute right-1.5 top-1/2 -translate-y-1/2 bg-black/30 dark:bg-black/50 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs select-none backdrop-blur-xs transition">&#10095;</button>
@@ -341,7 +360,18 @@
             defaultLat = parseFloat(searchLat); defaultLng = parseFloat(searchLng); defaultZoom = 14;
         }
 
-        const establishments = @json($establishments);
+        // Модифікуємо дані для JS, додаючи повні URL-адреси зображень сховища в JSON
+        const establishments = @json($establishments).map(est => {
+            let photos = [];
+            if (est.photos && Array.isArray(est.photos)) {
+                photos = est.photos.map(p => `{{ asset('storage') }}/${p}`);
+            }
+            if (photos.length === 0) {
+                photos.push("https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&q=80");
+            }
+            est.compiled_first_photo = photos[0];
+            return est;
+        });
 
         if (establishments.length > 0 && !(searchLat && searchLng)) {
             const firstLat = establishments[0].latitude ?? establishments[0].shirota ?? establishments[0].широта;
@@ -381,7 +411,8 @@
 
             const marker = L.marker([parseFloat(estLat), parseFloat(estLng)]).addTo(map);
             marker.bindPopup(`
-                <div style="font-family: inherit; padding: 2px;">
+                <div style="font-family: inherit; padding: 2px; max-width: 200px;">
+                    <img src="${est.compiled_first_photo}" style="width: 100%; h-auto; max-height: 80px; object-cover: cover; border-radius: 8px; margin-bottom: 6px;" alt="">
                     <strong style="font-size: 14px; color: #ea580c; display: block; margin-bottom: 2px;">${est.name}</strong>
                     <span style="font-size: 11px; display: block; margin-bottom: 6px; color: #4b5563;">${estAddress}</span>
                     <span style="font-size: 12px; font-weight: 700; display: block;">Середній чек: <span style="color:#ea580c;">${estCheck} грн</span></span>

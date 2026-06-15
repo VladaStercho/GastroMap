@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -14,9 +14,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Створюємо тестових користувачів для різних ролей з ТЗ
 
-        // Створюємо Адміністратора (для модерації закладів та відгуків)
+
+
         User::updateOrCreate(
             ['email' => 'admin@gastromap.com'],
             [
@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Створюємо Власника закладу (який зможе редагувати свій профіль/меню)
+
         User::updateOrCreate(
             ['email' => 'owner@gastromap.com'],
             [
@@ -38,7 +38,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Створюємо звичайного користувача/гостя (який залишає відгуки та додає в обране)
+
         User::updateOrCreate(
             ['email' => 'guest@gastromap.com'],
             [
@@ -49,7 +49,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 2. Викликаємо сідер для наповнення закладів (кав'ярень, ресторанів)
+
         $this->call(EstablishmentSeeder::class);
     }
 }

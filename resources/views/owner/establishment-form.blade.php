@@ -50,7 +50,11 @@
                 {{ $establishment ? '✏️ Редагування закладу' : '🏪 Додати новий заклад' }}
             </h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {{ $establishment ? 'Оновіть інформацію про ваш заклад.' : 'Заповніть форму — після перевірки адміном заклад з\'явиться на мапі.' }}
+                @if(Auth::user()->isAdmin())
+                    Режим адміністратора: ви можете редагувати та зберігати інформацію будь-якого закладу.
+                @else
+                    {{ $establishment ? 'Оновіть інформацію про ваш заклад.' : 'Заповніть форму — після перевірки адміном заклад з\'явиться на мапі.' }}
+                @endif
             </p>
         </div>
 
@@ -65,8 +69,9 @@
         @endif
 
         <form
-            action="{{ $establishment ? route('owner.establishment.update', $establishment->id) : route('owner.establishment.store') }}"
+            action="{{ $establishment ? (Route::has('owner.establishment.update') ? route('owner.establishment.update', $establishment->id) : route('establishments.update', $establishment->id)) : (Route::has('owner.establishment.store') ? route('owner.establishment.store') : route('establishments.store')) }}"
             method="POST"
+            enctype="multipart/form-data"
             class="space-y-6"
         >
             @csrf
@@ -108,6 +113,43 @@
                 </div>
             </div>
 
+            {{-- Фотографії закладу --}}
+            <div class="card border rounded-2xl p-6 space-y-4 shadow-xs">
+                <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-800 pb-3">
+                    <i class="fa-solid fa-camera mr-2 text-orange-500"></i>Фотографії закладу
+                </h2>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                        Завантажити фотографії {{ !$establishment ? '*' : '' }}
+                    </label>
+                    <input type="file" name="photos[]" multiple accept="image/*" class="form-input text-sm"
+                           {{ !$establishment ? 'required' : '' }}>
+
+                    <p class="text-[11px] text-gray-400 mt-1.5">
+                        <i class="fa-solid fa-circle-info mr-1"></i>
+                        Будь ласка, оберіть <b>щонайменше 3 фотокартки</b> одночасно (формати: JPEG, PNG, WEBP).
+                    </p>
+
+                    @error('photos')
+                        <p class="text-red-500 text-xs mt-1.5 font-bold">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                @if($establishment && $establishment->photos && is_array($establishment->photos))
+                    <div class="mt-4">
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-2">Поточні завантажені фото:</p>
+                        <div class="grid grid-cols-3 gap-2">
+                            @foreach($establishment->photos as $photoPath)
+                                <div class="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800">
+                                    <img src="{{ asset('storage/' . $photoPath) }}" alt="Фото закладу" class="w-full h-24 object-cover">
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            </div>
+
             {{-- Адреса та місцезнаходження --}}
             <div class="card border rounded-2xl p-6 space-y-4 shadow-xs">
                 <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-800 pb-3">
@@ -146,10 +188,10 @@
                 </p>
             </div>
 
-            {{-- Деталі --}}
+            {{-- Деталі та Графік --}}
             <div class="card border rounded-2xl p-6 space-y-4 shadow-xs">
                 <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 dark:border-gray-800 pb-3">
-                    <i class="fa-solid fa-sliders mr-2 text-orange-500"></i>Деталі та графік
+                    <i class="fa-solid fa-sliders mr-2 text-orange-500"></i>Деталі та графік робочого часу
                 </h2>
 
                 <div>
@@ -159,18 +201,57 @@
                            class="form-input" placeholder="350">
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Час відкриття</label>
-                        <input type="time" name="opening_time"
-                               value="{{ old('opening_time', $establishment->opening_time ?? '09:00') }}"
-                               class="form-input">
+                @php
+                    $weekdayOpen = '09:00';
+                    $weekdayClose = '22:00';
+                    if(!empty($establishment->opening_time) && str_contains($establishment->opening_time, '-')) {
+                        $parts = explode('-', $establishment->opening_time);
+                        $weekdayOpen = $parts[0] ?? '09:00';
+                        $weekdayClose = $parts[1] ?? '22:00';
+                    }
+
+                    $weekendOpen = '10:00';
+                    $weekendClose = '23:00';
+                    if(!empty($establishment->closing_time) && str_contains($establishment->closing_time, '-')) {
+                        $parts = explode('-', $establishment->closing_time);
+                        $weekendOpen = $parts[0] ?? '10:00';
+                        $weekendClose = $parts[1] ?? '23:00';
+                    }
+                @endphp
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    {{-- Інпути для буднів --}}
+                    <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-950/40 border border-gray-100 dark:border-gray-900/60 space-y-3">
+                        <span class="block text-xs font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-calendar-days"></i> Будні дні (Пн — Пт)
+                        </span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Відкриття</label>
+                                <input type="time" name="weekday_open" value="{{ old('weekday_open', $weekdayOpen) }}" class="form-input">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Закриття</label>
+                                <input type="time" name="weekday_close" value="{{ old('weekday_close', $weekdayClose) }}" class="form-input">
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Час закриття</label>
-                        <input type="time" name="closing_time"
-                               value="{{ old('closing_time', $establishment->closing_time ?? '22:00') }}"
-                               class="form-input">
+
+                    {{-- Інпути для вихідних --}}
+                    <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-950/40 border border-gray-100 dark:border-gray-900/60 space-y-3">
+                        <span class="block text-xs font-bold text-red-500 dark:text-red-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-umbrella-beach"></i> Вихідні дні (Сб — Нд)
+                        </span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Відкриття</label>
+                                <input type="time" name="weekend_open" value="{{ old('weekend_open', $weekendOpen) }}" class="form-input">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Закриття</label>
+                                <input type="time" name="weekend_close" value="{{ old('weekend_close', $weekendClose) }}" class="form-input">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -195,7 +276,7 @@
                         <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/40 transition">
                             <input type="checkbox" name="{{ $field }}" value="1"
                                    class="w-4 h-4 accent-orange-500 cursor-pointer"
-                                   {{ old($field, $establishment->{$field} ?? false) ? 'checked' : '' }}>
+                                   {{ old($field, $establishment ? ($establishment->{$field} ?? false) : false) ? 'checked' : '' }}>
                             <i class="fa-solid {{ $info['icon'] }} text-orange-500 text-sm"></i>
                             <span class="text-sm font-semibold">{{ $info['label'] }}</span>
                         </label>
@@ -208,7 +289,7 @@
                 <a href="{{ route('dashboard') }}" class="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-semibold transition flex items-center gap-2">
                     <i class="fa-solid fa-xmark"></i> Скасувати
                 </a>
-                <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white font-black px-8 py-3 rounded-xl transition shadow-lg shadow-orange-500/20 flex items-center gap-2 text-sm">
+                <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white font-black px-8 py-3 rounded-xl transition shadow-lg shadow-orange-500/20 flex items-center gap-2 text-sm cursor-pointer">
                     @if($establishment)
                         <i class="fa-solid fa-floppy-disk"></i> Зберегти зміни
                     @else

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    // Відображення форми входу/реєстрації
+
     public function showAuthForm()
     {
         if (Auth::check()) {
@@ -19,7 +19,7 @@ class AuthController extends Controller
         return view('auth');
     }
 
-    // Логіка входу
+
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -42,7 +42,7 @@ class AuthController extends Controller
         ])->onlyInput('email');
     }
 
-    // Логіка реєстрації гостей
+
     public function register(Request $request)
     {
         $request->validate([
@@ -63,7 +63,7 @@ class AuthController extends Controller
         return redirect()->route('dashboard')->with('success', 'Реєстрація успішна! Ласкаво просимо.');
     }
 
-    // Особистий кабінет
+
     public function dashboard()
     {
         $user = Auth::user();
@@ -77,7 +77,7 @@ class AuthController extends Controller
         return view('dashboard', compact('user', 'myEstablishments'));
     }
 
-    // Панель адміністратора
+
     public function adminDashboard()
     {
         if (strtolower(Auth::user()->role) !== 'admin') abort(403);
@@ -89,7 +89,7 @@ class AuthController extends Controller
         return view('admin', compact('users', 'establishments', 'reviews'));
     }
 
-    // Вихід із системи
+
     public function logout(Request $request)
     {
         Auth::logout();
@@ -98,7 +98,7 @@ class AuthController extends Controller
         return redirect('/')->with('success', 'Ви вийшли з системи.');
     }
 
-    // Модерація: Схвалення закладу
+
     public function approveEstablishment($id)
     {
         if (strtolower(Auth::user()->role) !== 'admin') abort(403);
@@ -107,24 +107,24 @@ class AuthController extends Controller
         return back()->with('success', "Заклад '{$establishment->name}' успішно додано на мапу!");
     }
 
-    // Модерація: Зміна ролі користувача — ПОВНІСТЮ ВИПРАВЛЕНО
+
     public function updateUserRole(Request $request, $id)
     {
         if (strtolower(Auth::user()->role) !== 'admin') abort(403);
 
         $user = \App\Models\User::findOrFail($id);
 
-        // Зберігаємо першу літеру великою для вашої БД ('User', 'Owner', 'Admin')
+
         $newRole = ucfirst(strtolower($request->role));
 
-        // Пряме збереження властивості для обходу $fillable
+
         $user->role = $newRole;
         $user->save();
 
         return redirect()->route('admin.dashboard')->with('success', "Роль користувача {$user->name} успішно змінено на '{$newRole}'!");
     }
 
-    // Модерація: Бан користувача
+
     public function deleteUser($id)
     {
         if (strtolower(Auth::user()->role) !== 'admin') abort(403);
@@ -133,7 +133,7 @@ class AuthController extends Controller
         return back()->with('success', "Користувача {$user->name} видалено з системи!");
     }
 
-    // Модерація: Видалення закладу
+
     public function deleteEstablishment($id)
     {
         if (strtolower(Auth::user()->role) !== 'admin') abort(403);
@@ -142,7 +142,7 @@ class AuthController extends Controller
         return back()->with('success', "Заклад '{$est->name}' видалено!");
     }
 
-    // Модерація: Видалення відгуку
+
     public function deleteReview($id)
     {
         if (strtolower(Auth::user()->role) !== 'admin') abort(403);
