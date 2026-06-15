@@ -102,6 +102,9 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+        .theme-sun, .theme-moon { display: none; }
+        html:not(.dark) .theme-sun  { display: block; }
+        html.dark .theme-moon       { display: block; }
     </style>
 </head>
 <body class="bg-gray-50/50 dark:bg-gray-950 font-sans antialiased min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-200">
@@ -111,16 +114,16 @@
             <i class="fa-solid fa-utensils text-lg"></i>ГастроМапа
         </a>
         <div class="flex items-center gap-4">
-            <button onclick="toggleTheme()" class="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 transition cursor-pointer" title="Змінити тему">
-                <i class="fa-solid fa-sun block dark:hidden text-sm"></i>
-                <i class="fa-solid fa-moon hidden dark:block text-sm"></i>
+            <button onclick="toggleTheme()" type="button" aria-label="Перемкнути тему" class="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 border border-gray-200 dark:border-gray-700 transition cursor-pointer" title="Змінити тему">
+                <i class="fa-solid fa-sun text-sm theme-sun"></i>
+                <i class="fa-solid fa-moon text-sm theme-moon"></i>
             </button>
 
-            <a href="/" class="text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition flex items-center gap-1.5">
-                <i class="fa-solid fa-arrow-left text-xs"></i> До карти
+            <a href="/" aria-label="До карти" title="До карти" class="h-10 w-10 sm:w-auto sm:px-2 inline-flex items-center justify-center gap-1.5 rounded-xl text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
+                <i class="fa-solid fa-arrow-left"></i><span class="hidden sm:inline">До карти</span>
             </a>
             @auth
-                <a href="{{ route('dashboard') }}" class="text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-orange-600 transition bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-xl">Мій Кабінет</a>
+                <a href="{{ route('dashboard') }}" aria-label="Мій Кабінет" title="Мій Кабінет" class="h-10 w-10 sm:w-auto sm:px-4 inline-flex items-center justify-center gap-2 rounded-xl text-sm font-bold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-orange-600 border border-gray-200 dark:border-gray-700 transition"><i class="fa-solid fa-circle-user text-base"></i><span class="hidden sm:inline">Мій Кабінет</span></a>
             @else
                 @if(Route::has('auth'))
                     <a href="{{ route('auth') }}" class="text-sm bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-xl font-black transition shadow-sm hover:shadow">Увійти</a>
@@ -171,7 +174,7 @@
                 </span>
                 <span class="text-xs bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 px-3 py-1 rounded-full font-black uppercase tracking-wide">
                     @php $estType = $establishment->type ?? 'cafe'; @endphp
-                    @if($estType == 'cafe') ☕ Кав'ярня @elseif($estType == 'restaurant') 🍽️ Ресторан @else 🍺 Паб @endif
+                    @if($estType == 'cafe') <i class="fa-solid fa-mug-saucer"></i> Кав'ярня @elseif($estType == 'restaurant') <i class="fa-solid fa-utensils"></i> Ресторан @else <i class="fa-solid fa-beer-mug-empty"></i> Паб @endif
                 </span>
             </div>
 
@@ -210,8 +213,8 @@
                         </div>
                     @endforeach
                 </div>
-                <button type="button" onclick="changeMobileSlide(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 text-white w-9 h-9 rounded-full flex items-center justify-center text-sm backdrop-blur-xs shadow-xs">&#10094;</button>
-                <button type="button" onclick="changeMobileSlide(1)" class="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 text-white w-9 h-9 rounded-full flex items-center justify-center text-sm backdrop-blur-xs shadow-xs">&#10095;</button>
+                <button type="button" onclick="changeMobileSlide(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 text-white w-9 h-9 rounded-full flex items-center justify-center text-sm backdrop-blur-xs shadow-xs"><i class="fa-solid fa-chevron-left"></i></button>
+                <button type="button" onclick="changeMobileSlide(1)" class="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 text-white w-9 h-9 rounded-full flex items-center justify-center text-sm backdrop-blur-xs shadow-xs"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
         </div>
 
@@ -423,33 +426,33 @@
                             @csrf
                             <div class="space-y-3">
                                 <div class="flex justify-between items-center bg-white dark:bg-gray-900 p-2 rounded-xl border border-gray-100 dark:border-gray-800">
-                                    <label class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider pl-1">🍔 Кухня</label>
+                                    <label class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider pl-1"><i class="fa-solid fa-burger"></i> Кухня</label>
                                     <select name="rating_food" class="bg-gray-50 dark:bg-gray-800 border-0 rounded-lg p-1 text-xs font-black text-gray-700 dark:text-gray-300 focus:ring-0">
-                                        <option value="5">⭐⭐⭐⭐⭐ 5</option>
-                                        <option value="4">⭐⭐⭐⭐ 4</option>
-                                        <option value="3">⭐⭐⭐ 3</option>
-                                        <option value="2">⭐⭐ 2</option>
-                                        <option value="1">⭐ 1</option>
+                                        <option value="5">★★★★★ 5</option>
+                                        <option value="4">★★★★ 4</option>
+                                        <option value="3">★★★ 3</option>
+                                        <option value="2">★★ 2</option>
+                                        <option value="1">★ 1</option>
                                     </select>
                                 </div>
                                 <div class="flex justify-between items-center bg-white dark:bg-gray-900 p-2 rounded-xl border border-gray-100 dark:border-gray-800">
-                                    <label class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider pl-1">🤵 Сервіс</label>
+                                    <label class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider pl-1"><i class="fa-solid fa-bell-concierge"></i> Сервіс</label>
                                     <select name="rating_service" class="bg-gray-50 dark:bg-gray-800 border-0 rounded-lg p-1 text-xs font-black text-gray-700 dark:text-gray-300 focus:ring-0">
-                                        <option value="5">⭐⭐⭐⭐⭐ 5</option>
-                                        <option value="4">⭐⭐⭐⭐ 4</option>
-                                        <option value="3">⭐⭐⭐ 3</option>
-                                        <option value="2">⭐⭐ 2</option>
-                                        <option value="1">⭐ 1</option>
+                                        <option value="5">★★★★★ 5</option>
+                                        <option value="4">★★★★ 4</option>
+                                        <option value="3">★★★ 3</option>
+                                        <option value="2">★★ 2</option>
+                                        <option value="1">★ 1</option>
                                     </select>
                                 </div>
                                 <div class="flex justify-between items-center bg-white dark:bg-gray-900 p-2 rounded-xl border border-gray-100 dark:border-gray-800">
-                                    <label class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider pl-1">✨ Атмосфера</label>
+                                    <label class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-wider pl-1"><i class="fa-solid fa-wand-magic-sparkles"></i> Атмосфера</label>
                                     <select name="rating_ambience" class="bg-gray-50 dark:bg-gray-800 border-0 rounded-lg p-1 text-xs font-black text-gray-700 dark:text-gray-300 focus:ring-0">
-                                        <option value="5">⭐⭐⭐⭐⭐ 5</option>
-                                        <option value="4">⭐⭐⭐⭐ 4</option>
-                                        <option value="3">⭐⭐⭐ 3</option>
-                                        <option value="2">⭐⭐ 2</option>
-                                        <option value="1">⭐ 1</option>
+                                        <option value="5">★★★★★ 5</option>
+                                        <option value="4">★★★★ 4</option>
+                                        <option value="3">★★★ 3</option>
+                                        <option value="2">★★ 2</option>
+                                        <option value="1">★ 1</option>
                                     </select>
                                 </div>
                             </div>
@@ -462,9 +465,9 @@
                         <div class="text-center py-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-2.5 px-4">
                             <p class="text-xs text-gray-500 dark:text-gray-400 font-medium leading-normal">Тільки зареєстровані гості можуть ставити оцінки закладам.</p>
                             @if(Route::has('auth'))
-                                <a href="{{ route('auth') }}" class="inline-block text-xs font-black text-orange-500 hover:text-orange-600 transition uppercase tracking-wider">Авторизуватися →</a>
+                                <a href="{{ route('auth') }}" class="inline-block text-xs font-black text-orange-500 hover:text-orange-600 transition uppercase tracking-wider">Авторизуватися <i class="fa-solid fa-arrow-right-long"></i></a>
                             @else
-                                <a href="/login" class="inline-block text-xs font-black text-orange-500 hover:text-orange-600 transition uppercase tracking-wider">Авторизуватися →</a>
+                                <a href="/login" class="inline-block text-xs font-black text-orange-500 hover:text-orange-600 transition uppercase tracking-wider">Авторизуватися <i class="fa-solid fa-arrow-right-long"></i></a>
                             @endif
                         </div>
                     @endauth
@@ -484,9 +487,9 @@
                                     <span class="text-[10px] text-gray-400 dark:text-gray-500 font-mono font-bold">{{ $rev->created_at ? $rev->created_at->format('d.m.Y H:i') : now()->format('d.m.Y') }}</span>
                                 </div>
                                 <div class="flex flex-wrap gap-2.5 text-[10px] font-bold text-gray-500 dark:text-gray-400">
-                                    <span class="bg-white dark:bg-gray-900 px-2.5 py-1 rounded-lg border border-gray-100 dark:border-gray-800">🍔 Їжа: <b class="text-orange-600 dark:text-orange-500 ml-0.5">{{ $rev->rating_food ?? 5 }}/5</b></span>
-                                    <span class="bg-white dark:bg-gray-900 px-2.5 py-1 rounded-lg border border-gray-100 dark:border-gray-800">🤵 Сервіс: <b class="text-orange-600 dark:text-orange-500 ml-0.5">{{ $rev->rating_service ?? 5 }}/5</b></span>
-                                    <span class="bg-white dark:bg-gray-900 px-2.5 py-1 rounded-lg border border-gray-100 dark:border-gray-800">✨ Зал: <b class="text-orange-600 dark:text-orange-500 ml-0.5">{{ $rev->rating_ambience ?? 5 }}/5</b></span>
+                                    <span class="bg-white dark:bg-gray-900 px-2.5 py-1 rounded-lg border border-gray-100 dark:border-gray-800"><i class="fa-solid fa-burger"></i> Їжа: <b class="text-orange-600 dark:text-orange-500 ml-0.5">{{ $rev->rating_food ?? 5 }}/5</b></span>
+                                    <span class="bg-white dark:bg-gray-900 px-2.5 py-1 rounded-lg border border-gray-100 dark:border-gray-800"><i class="fa-solid fa-bell-concierge"></i> Сервіс: <b class="text-orange-600 dark:text-orange-500 ml-0.5">{{ $rev->rating_service ?? 5 }}/5</b></span>
+                                    <span class="bg-white dark:bg-gray-900 px-2.5 py-1 rounded-lg border border-gray-100 dark:border-gray-800"><i class="fa-solid fa-wand-magic-sparkles"></i> Зал: <b class="text-orange-600 dark:text-orange-500 ml-0.5">{{ $rev->rating_ambience ?? 5 }}/5</b></span>
                                 </div>
                                 <p class="text-gray-600 dark:text-gray-300 leading-relaxed italic bg-white dark:bg-gray-900 p-3 rounded-xl border border-gray-50 dark:border-gray-800/80">"{{ $rev->text }}"</p>
                             </div>
@@ -510,7 +513,7 @@
                     <i class="fa-solid fa-file-pdf text-orange-500 text-lg"></i>
                     <span class="text-sm font-black uppercase tracking-wide font-mono">Цифрове меню закладу.pdf</span>
                 </div>
-                <button type="button" onclick="closeMenuModal()" class="w-8 h-8 rounded-full bg-gray-200/70 dark:bg-gray-700 hover:bg-rose-500 hover:text-white transition flex items-center justify-center text-xl font-bold cursor-pointer">&times;</button>
+                <button type="button" onclick="closeMenuModal()" class="w-8 h-8 rounded-full bg-gray-200/70 dark:bg-gray-700 hover:bg-rose-500 hover:text-white transition flex items-center justify-center text-xl font-bold cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="flex-1 bg-gray-100 dark:bg-gray-950 relative">
                 @if(!empty($establishment->menu_pdf))
@@ -521,12 +524,12 @@
     </div>
 
     <div id="lightbox" class="hidden fixed inset-0 bg-black/95 z-50 flex items-center justify-center select-none backdrop-blur-md">
-        <button onclick="closeLightbox()" class="absolute top-4 right-6 text-white/70 hover:text-white text-4xl font-light p-2 transition cursor-pointer">&times;</button>
-        <button onclick="navigateLightbox(-1)" class="absolute left-4 text-white/50 hover:text-white text-4xl p-4 transition cursor-pointer">&#10094;</button>
+        <button onclick="closeLightbox()" class="absolute top-4 right-6 text-white/70 hover:text-white text-4xl font-light p-2 transition cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="navigateLightbox(-1)" class="absolute left-4 text-white/50 hover:text-white text-4xl p-4 transition cursor-pointer"><i class="fa-solid fa-chevron-left"></i></button>
         <div class="max-w-[90vw] max-h-[85vh] flex items-center justify-center">
             <img id="lightbox-img" src="" class="max-w-full max-h-[85vh] object-contain rounded-md shadow-2xl transition duration-200" alt="Повноекранне фото">
         </div>
-        <button onclick="navigateLightbox(1)" class="absolute right-4 text-white/50 hover:text-white text-4xl p-4 transition cursor-pointer">&#10095;</button>
+        <button onclick="navigateLightbox(1)" class="absolute right-4 text-white/50 hover:text-white text-4xl p-4 transition cursor-pointer"><i class="fa-solid fa-chevron-right"></i></button>
         <div id="lightbox-counter" class="absolute bottom-6 text-white/60 text-xs font-mono tracking-widest bg-white/10 px-3 py-1 rounded-full backdrop-blur-xs"></div>
     </div>
 

@@ -5,15 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Особистий кабінет | ГастроМапа</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @custom-variant dark (&:where(.dark, .dark *));
+    </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --bg-main: #f9fafb;
+            --bg-main: #eef1f5;
             --bg-card: #ffffff;
-            --border-color: #e5e7eb;
-            --text-main: #111827;
-            --text-muted: #4b5563;
+            --border-color: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #334155;
         }
 
         html.dark {
@@ -26,6 +29,9 @@
 
         body { background-color: var(--bg-main) !important; color: var(--text-main) !important; }
         nav, .sidebar, .card { background-color: var(--bg-card) !important; border-color: var(--border-color) !important; }
+        .theme-sun, .theme-moon { display: none; }
+        html:not(.dark) .theme-sun  { display: block; }
+        html.dark .theme-moon       { display: block; }
     </style>
 
     <script>
@@ -122,9 +128,9 @@
                 </span>
             @endif
 
-            <button type="button" onclick="toggleTheme()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition cursor-pointer">
-                <i class="fa-solid fa-sun block dark:hidden text-sm"></i>
-                <i class="fa-solid fa-moon hidden dark:block text-sm"></i>
+            <button type="button" onclick="toggleTheme()" aria-label="Перемкнути тему" class="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 border border-gray-200 dark:border-gray-700 transition cursor-pointer">
+                <i class="fa-solid fa-sun text-sm theme-sun"></i>
+                <i class="fa-solid fa-moon text-sm theme-moon"></i>
             </button>
 
             @if(auth()->user()->isAdmin())
@@ -215,7 +221,7 @@
             <div id="tab-profile" class="tab-content space-y-6">
                 <div class="card border rounded-2xl p-6 relative overflow-hidden transition-colors duration-300 shadow-xs">
                     <div class="absolute -right-6 -top-6 w-32 h-32 bg-orange-500/10 rounded-full blur-xl"></div>
-                    <h1 class="text-2xl font-black tracking-tight mb-2">Вітаємо, {{ auth()->user()->name ?? 'користувачу' }}! 👋</h1>
+                    <h1 class="text-2xl font-black tracking-tight mb-2">Вітаємо, {{ auth()->user()->name ?? 'користувачу' }}! <i class="fa-solid fa-hand-sparkles text-orange-400"></i></h1>
                     <p class="text-sm text-gray-500 dark:text-gray-400 max-w-xl leading-relaxed">
                         @if(auth()->user()->isOwner())
                             Ви маєте права <strong class="text-green-600 dark:text-green-400">Власника закладу</strong>. Ви можете додавати та редагувати свої заклади у ГастроМапі.
@@ -319,9 +325,9 @@
                                         <span class="text-xs font-bold text-orange-500">{{ $review->establishment->name ?? 'Заклад' }}</span>
                                         <p class="text-xs font-medium text-gray-600 dark:text-gray-400 mt-0.5">"{{ $review->text ?? '' }}"</p>
                                         <div class="flex gap-2 mt-1 text-[10px] text-gray-400">
-                                            <span>🍽 Їжа: {{ $review->rating_food }}/5</span>
-                                            <span>👨‍💼 Сервіс: {{ $review->rating_service }}/5</span>
-                                            <span>🎨 Атмосфера: {{ $review->rating_ambience }}/5</span>
+                                            <span><i class="fa-solid fa-utensils"></i> Їжа: {{ $review->rating_food }}/5</span>
+                                            <span><i class="fa-solid fa-bell-concierge"></i> Сервіс: {{ $review->rating_service }}/5</span>
+                                            <span><i class="fa-solid fa-palette"></i> Атмосфера: {{ $review->rating_ambience }}/5</span>
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-1 text-amber-500 text-xs shrink-0">

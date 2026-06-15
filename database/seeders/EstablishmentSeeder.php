@@ -68,5 +68,7 @@ class EstablishmentSeeder extends Seeder
             'laptop_friendly' => false,
             'is_approved' => true,
         ]);
+
+        Establishment::factory()->count(12)->create();
     }
 }

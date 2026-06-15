@@ -5,19 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ГастроМапа - Каталог Закладів</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @custom-variant dark (&:where(.dark, .dark *));
+    </style>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         /* НЕВБИВАНІ СИСТЕМНІ ЗМІННІ ДЛЯ ВСІХ БРАУЗЕРІВ */
         :root {
-            --bg-main: #f9fafb;
+            --bg-main: #eef1f5;      /* грейовіший фон сторінки — білі картки виразніше виділяються */
             --bg-card: #ffffff;
-            --border-color: #e5e7eb;
-            --text-main: #111827;
-            --text-muted: #4b5563;
+            --border-color: #cbd5e1; /* чітко видимі межі (було #e5e7eb) */
+            --text-main: #0f172a;    /* трохи глибший майже-чорний (було #111827) */
+            --text-muted: #334155;   /* контрастніший вторинний текст: адреси карток тощо (було #4b5563) */
             --form-bg: #ffffff;
-            --form-border: #d1d5db;
+            --form-border: #94a3b8;  /* видимі контури полів (було #d1d5db) */
         }
 
         html.dark {
@@ -134,6 +137,69 @@
         .slides-container {
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        .theme-sun, .theme-moon { display: none; }
+        html:not(.dark) .theme-sun  { display: block; }
+        html.dark .theme-moon       { display: block; }
+
+        :root {
+            --brand: #f97316;
+            --brand-strong: #ea580c;
+            --shadow-card: 0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.08);
+            --shadow-card-hover: 0 12px 22px -8px rgba(15,23,42,.22);
+        }
+
+        #filterForm input:focus-visible,
+        #filterForm select:focus-visible,
+        button:focus-visible,
+        a:focus-visible {
+            outline: 2px solid var(--brand);
+            outline-offset: 2px;
+            border-radius: 12px;
+        }
+
+        .establishment-card {
+            box-shadow: var(--shadow-card);
+            transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+        }
+        .establishment-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-card-hover);
+        }
+        .establishment-card.is-active {
+            border-color: var(--brand) !important;
+            box-shadow: 0 0 0 2px rgba(249,115,22,.35), var(--shadow-card-hover);
+        }
+
+        .amenity-chip {
+            display: inline-flex; align-items: center; gap: .45rem;
+            min-height: 38px; padding: .4rem .8rem;
+            border-radius: 9999px; font-size: .72rem; font-weight: 600;
+            border: 1px solid var(--form-border);
+            background: var(--bg-card); color: var(--text-muted);
+            cursor: pointer; user-select: none;
+            transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
+        }
+        .amenity-chip:hover { border-color: #fb923c; color: var(--text-main); }
+        .amenity-chip:has(input:checked) {
+            background: var(--brand); border-color: var(--brand); color: #fff;
+            box-shadow: 0 1px 2px rgba(249,115,22,.35);
+        }
+
+        .results-heading {
+            margin: -1rem -1rem .75rem; padding: .85rem 1.25rem .65rem;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+        }
+        @media (min-width: 1024px) {
+            .results-heading { position: sticky; top: 0; z-index: 5; }
+        }
+
+        .gastro-pin {
+            color: var(--brand);
+            font-size: 30px; line-height: 1; text-align: center;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,.35));
+        }
     </style>
 
     <script>
@@ -156,6 +222,16 @@
                 localStorage.setItem('theme', 'dark');
             }
         }
+
+        function openFilters() {
+            document.getElementById('filterPanel').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeFilters() {
+            document.getElementById('filterPanel').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
     </script>
 </head>
 <body class="font-sans antialiased transition-colors duration-300">
@@ -165,14 +241,14 @@
             <i class="fa-solid fa-utensils text-lg"></i>ГастроМапа
         </a>
         <div class="flex items-center gap-3">
-            <button type="button" onclick="toggleTheme()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition cursor-pointer">
-                <i class="fa-solid fa-sun block dark:hidden text-sm"></i>
-                <i class="fa-solid fa-moon hidden dark:block text-sm"></i>
+            <button type="button" onclick="toggleTheme()" aria-label="Перемкнути тему" class="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 border border-gray-200 dark:border-gray-700 transition cursor-pointer">
+                <i class="fa-solid fa-sun text-sm theme-sun"></i>
+                <i class="fa-solid fa-moon text-sm theme-moon"></i>
             </button>
 
             @auth
-                <a href="{{ route('dashboard') }}" class="text-sm font-bold transition bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-xl">
-                    Мій Кабінет
+                <a href="{{ route('dashboard') }}" aria-label="Мій Кабінет" title="Мій Кабінет" class="h-10 w-10 sm:w-auto sm:px-4 inline-flex items-center justify-center gap-2 rounded-xl text-sm font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-orange-500 border border-gray-200 dark:border-gray-700 transition">
+                    <i class="fa-solid fa-circle-user text-base"></i><span class="hidden sm:inline">Мій Кабінет</span>
                 </a>
             @else
                 <a href="{{ route('auth') }}" class="text-sm bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-xl font-bold transition shadow-md shadow-orange-500/10">
@@ -182,29 +258,46 @@
         </div>
     </nav>
 
-    <div class="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
+    <div class="flex flex-col-reverse lg:flex-row lg:h-[calc(100vh-4rem)]">
 
-        <div class="sidebar-container w-full lg:w-96 border-r flex flex-col h-full shadow-xl z-10 transition-colors duration-300">
+        <div class="sidebar-container w-full lg:w-96 lg:flex-none lg:min-h-0 border-t lg:border-t-0 lg:border-r flex flex-col lg:h-full shadow-xl z-10 transition-colors duration-300">
 
-            <form action="{{ route('home') }}" method="GET" id="filterForm" class="p-4 border-b space-y-3 bg-gray-50/70 dark:bg-gray-950/20 transition-colors duration-300">
+            <form action="{{ route('home') }}" method="GET" id="filterForm">
                 <input type="hidden" name="lat" id="userLat" value="{{ request('lat') }}">
                 <input type="hidden" name="lng" id="userLng" value="{{ request('lng') }}">
 
-                <div>
-                    <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Що ви шукаєте?</label>
-                    <div class="relative">
+                <div class="flex items-center gap-2 p-3 lg:p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-950/20 transition-colors duration-300">
+                    <div class="relative flex-1">
                         <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
                             <i class="fa-solid fa-magnifying-glass text-xs"></i>
                         </div>
-                        <input type="text" name="search" id="search" value="{{ request('search') }}"
-                               class="w-full rounded-xl py-2 pl-9 pr-3 text-sm focus:outline-none focus:border-orange-500 dark:focus:border-orange-500 transition placeholder:text-gray-400 dark:placeholder:text-gray-600 font-medium"
-                               placeholder="Введіть назву закладу...">
+                        <input type="text" name="search" id="search" value="{{ request('search') }}" oninput="toggleClearSearch()"
+                               class="w-full rounded-xl py-2.5 lg:py-2 pl-9 pr-9 text-sm focus:outline-none focus:border-orange-500 dark:focus:border-orange-500 transition placeholder:text-gray-400 dark:placeholder:text-gray-600 font-medium"
+                               placeholder="Пошук закладу...">
+                        <button type="button" id="clearSearchBtn" onclick="clearSearch()" aria-label="Очистити пошук" class="absolute inset-y-0 right-3 hidden items-center text-gray-400 hover:text-orange-500 transition cursor-pointer">
+                            <i class="fa-solid fa-xmark text-xs"></i>
+                        </button>
                     </div>
+                    <button type="button" onclick="openFilters()" aria-label="Фільтри" class="lg:hidden shrink-0 w-11 h-11 flex items-center justify-center rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-sm shadow-orange-500/20 transition cursor-pointer">
+                        <i class="fa-solid fa-sliders"></i>
+                    </button>
+                    <button type="button" onclick="getLocation()" aria-label="Знайти заклади поруч" class="lg:hidden shrink-0 w-11 h-11 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-100 border border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                    </button>
                 </div>
+
+                <div id="filterPanel" class="hidden lg:block fixed inset-0 z-[2000] bg-[var(--bg-main)] overflow-y-auto lg:static lg:z-auto lg:inset-auto lg:bg-transparent lg:overflow-visible">
+                    <div class="lg:hidden sticky top-0 z-10 flex items-center justify-between px-4 h-14 border-b border-gray-200 dark:border-gray-800 bg-[var(--bg-card)]">
+                        <span class="font-black text-sm flex items-center gap-2"><i class="fa-solid fa-sliders text-orange-500"></i> Фільтри</span>
+                        <button type="button" onclick="closeFilters()" aria-label="Закрити фільтри" class="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-orange-500 border border-gray-200 dark:border-gray-700 transition cursor-pointer">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="p-4 space-y-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-950/20 transition-colors duration-300">
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Місто</label>
+                        <label class="block text-[10px] font-black text-gray-600 dark:text-gray-500 uppercase tracking-widest mb-1.5">Місто</label>
                         <select name="city" class="w-full rounded-xl p-2 text-xs font-semibold focus:outline-none focus:border-orange-500">
                             <option value="">Всі міста</option>
                             <option value="Ужгород" {{ request('city') == 'Ужгород' ? 'selected' : '' }}>Ужгород</option>
@@ -213,7 +306,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Тип закладу</label>
+                        <label class="block text-[10px] font-black text-gray-600 dark:text-gray-500 uppercase tracking-widest mb-1.5">Тип закладу</label>
                         <select name="type" class="w-full rounded-xl p-2 text-xs font-semibold focus:outline-none focus:border-orange-500">
                             <option value="">Всі типи</option>
                             <option value="cafe" {{ request('type') == 'cafe' ? 'selected' : '' }}>Кав'ярня</option>
@@ -224,7 +317,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Середній чек</label>
+                    <label class="block text-[10px] font-black text-gray-600 dark:text-gray-500 uppercase tracking-widest mb-1.5">Середній чек</label>
                     <select name="check_range" class="w-full rounded-xl p-2 text-xs font-semibold focus:outline-none focus:border-orange-500">
                         <option value="">Будь-який чек</option>
                         <option value="low" {{ request('check_range') == 'low' ? 'selected' : '' }}>До 200 грн</option>
@@ -233,37 +326,49 @@
                     </select>
                 </div>
 
-                <div class="space-y-2 pt-1">
-                    <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5">Зручності</label>
-                    <label class="flex items-center gap-2.5 text-xs font-medium cursor-pointer select-none">
-                        <input type="checkbox" name="has_wifi" value="1" {{ request('has_wifi') ? 'checked' : '' }} class="rounded border-gray-300 dark:border-gray-700 text-orange-500 focus:ring-0 w-4 h-4 bg-white dark:bg-gray-900"> Wi-Fi інтернет
-                    </label>
-                    <label class="flex items-center gap-2.5 text-xs font-medium cursor-pointer select-none">
-                        <input type="checkbox" name="has_terrace" value="1" {{ request('has_terrace') ? 'checked' : '' }} class="rounded border-gray-300 dark:border-gray-700 text-orange-500 focus:ring-0 w-4 h-4 bg-white dark:bg-gray-900"> Літня тераса
-                    </label>
-                    <label class="flex items-center gap-2.5 text-xs font-medium cursor-pointer select-none">
-                        <input type="checkbox" name="is_pet_friendly" value="1" {{ request('is_pet_friendly') ? 'checked' : '' }} class="rounded border-gray-300 dark:border-gray-700 text-orange-500 focus:ring-0 w-4 h-4 bg-white dark:bg-gray-900"> Дружні до тварин
-                    </label>
+                <div class="pt-1">
+                    <label class="block text-[10px] font-black text-gray-600 dark:text-gray-500 uppercase tracking-widest mb-1.5">Зручності</label>
+                    <div class="flex flex-wrap gap-2">
+                        <label class="amenity-chip">
+                            <input type="checkbox" name="has_wifi" value="1" {{ request('has_wifi') ? 'checked' : '' }} class="sr-only"><i class="fa-solid fa-wifi"></i> Wi-Fi
+                        </label>
+                        <label class="amenity-chip">
+                            <input type="checkbox" name="has_terrace" value="1" {{ request('has_terrace') ? 'checked' : '' }} class="sr-only"><i class="fa-solid fa-umbrella-beach"></i> Тераса
+                        </label>
+                        <label class="amenity-chip">
+                            <input type="checkbox" name="is_pet_friendly" value="1" {{ request('is_pet_friendly') ? 'checked' : '' }} class="sr-only"><i class="fa-solid fa-paw"></i> З тваринами
+                        </label>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-5 gap-2 pt-1">
-                    <button type="submit" class="col-span-3 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm cursor-pointer">
-                         Фільтрувати
+                    <button type="submit" class="col-span-5 lg:col-span-3 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 lg:py-2.5 rounded-xl text-sm lg:text-xs transition flex items-center justify-center gap-2 shadow-sm shadow-orange-500/20 cursor-pointer">
+                        <i class="fa-solid fa-check"></i> Застосувати
                     </button>
-                    <button type="button" onclick="getLocation()" id="geoBtn" class="col-span-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">
-                        <i class="fa-solid fa-location-crosshairs"></i> <span id="geoBtnText">Локація</span>
+                    <button type="button" onclick="getLocation()" id="geoBtn" aria-label="Знайти заклади поруч" class="hidden lg:flex col-span-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-100 border border-gray-200 dark:border-gray-700 font-bold py-2.5 rounded-xl text-xs transition items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-location-crosshairs"></i> <span id="geoBtnText">Поруч зі мною</span>
                     </button>
+                </div>
+                    </div>
                 </div>
             </form>
 
-            <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar" id="establishmentsList">
-                <h3 class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest px-1">Знайдено закладів: {{ $establishments->count() }}</h3>
+            <div class="p-4 space-y-3 custom-scrollbar lg:flex-1 lg:overflow-y-auto lg:min-h-0" id="establishmentsList">
+                <h3 class="results-heading text-[10px] font-black text-gray-600 dark:text-gray-500 uppercase tracking-widest">Знайдено закладів: {{ $establishments->count() }}</h3>
 
                 @forelse($establishments as $index => $est)
                     @php
                         $cardLat = $est->latitude ?? $est->shirota ?? $est->широта ?? 0;
                         $cardLng = $est->longitude ?? $est->dovgota ?? $est->довгота ?? 0;
                         $estType = $est->type ?? $est->тип ?? 'cafe';
+
+                        $typeMap = [
+                            'cafe'       => ['Кафе', 'fa-mug-saucer', 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'],
+                            'restaurant' => ['Ресторан', 'fa-utensils', 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'],
+                            'pub'        => ['Паб', 'fa-beer-mug-empty', 'bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300'],
+                        ];
+                        $typeKey = in_array($estType, ['cafe', 'кафе']) ? 'cafe' : (in_array($estType, ['restaurant', 'ресторан']) ? 'restaurant' : 'pub');
+                        [$typeLabel, $typeIcon, $typeBadge] = $typeMap[$typeKey];
                         $estAddress = $est->address ?? $est->adresa ?? $est->адреса ?? 'Адреса відсутня';
                         $estCheck = $est->average_check ?? $est->середній_чек ?? 0;
                         $reviewsCount = $est->reviews ? $est->reviews->count() : 0;
@@ -288,9 +393,9 @@
                         }
                     @endphp
 
-                    <div class="establishment-card border p-4 rounded-2xl hover:border-orange-400 dark:hover:border-orange-500/50 transition duration-200 cursor-pointer shadow-xs relative group" onclick="focusOnMap({{ $cardLat }}, {{ $cardLng }})">
-                        <span class="absolute top-3 right-3 text-[10px] font-bold bg-orange-50 dark:bg-orange-950/50 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                            @if($estType == 'cafe' || $estType == 'кафе') Кафе @elseif($estType == 'restaurant' || $estType == 'ресторан') Ресторан @else Паб @endif
+                    <div class="establishment-card border p-4 rounded-2xl hover:border-orange-400 dark:hover:border-orange-500/50 cursor-pointer relative group" onclick="focusOnMap(this, {{ $cardLat }}, {{ $cardLng }})">
+                        <span class="absolute top-3 right-3 text-[10px] font-bold {{ $typeBadge }} px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                            <i class="fa-solid {{ $typeIcon }} text-[9px]"></i>{{ $typeLabel }}
                         </span>
 
                         <h3 class="font-bold pr-14 text-base group-hover:text-orange-600 dark:group-hover:text-orange-500 transition-colors">{{ $est->name }}</h3>
@@ -301,12 +406,12 @@
                             <div class="flex h-full w-[300%] slides-container">
                                 @foreach($cardPhotos as $pUrl)
                                     <div class="w-1/3 h-full">
-                                        <img src="{{ $pUrl }}" class="w-full h-full object-cover" alt="Фото закладу">
+                                        <img src="{{ $pUrl }}" loading="lazy" class="w-full h-full object-cover" alt="Фото закладу">
                                     </div>
                                 @endforeach
                             </div>
-                            <button type="button" onclick="event.stopPropagation(); changeCardSlide(this, -1)" class="absolute left-1.5 top-1/2 -translate-y-1/2 bg-black/30 dark:bg-black/50 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs select-none backdrop-blur-xs transition">&#10094;</button>
-                            <button type="button" onclick="event.stopPropagation(); changeCardSlide(this, 1)" class="absolute right-1.5 top-1/2 -translate-y-1/2 bg-black/30 dark:bg-black/50 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs select-none backdrop-blur-xs transition">&#10095;</button>
+                            <button type="button" aria-label="Попереднє фото" onclick="event.stopPropagation(); changeCardSlide(this, -1)" class="absolute left-1.5 top-1/2 -translate-y-1/2 bg-black/35 hover:bg-black/70 text-white w-8 h-8 rounded-full flex items-center justify-center text-xs select-none backdrop-blur-xs transition"><i class="fa-solid fa-chevron-left"></i></button>
+                            <button type="button" aria-label="Наступне фото" onclick="event.stopPropagation(); changeCardSlide(this, 1)" class="absolute right-1.5 top-1/2 -translate-y-1/2 bg-black/35 hover:bg-black/70 text-white w-8 h-8 rounded-full flex items-center justify-center text-xs select-none backdrop-blur-xs transition"><i class="fa-solid fa-chevron-right"></i></button>
                         </div>
 
                         <p class="text-xs font-semibold mt-2.5">Середній чек: <span class="text-orange-600 dark:text-orange-400 font-bold">{{ $estCheck }} грн</span></p>
@@ -316,7 +421,7 @@
                         @endif
 
                         <div class="mt-3 pt-2.5 border-t flex justify-between items-center">
-                            <span class="text-xs text-gray-400 dark:text-gray-500">{{ $reviewsCount }} відгуків</span>
+                            <span class="text-xs text-gray-600 dark:text-gray-500">{{ $reviewsCount }} відгуків</span>
                             @if($routeExist)
                                 <a href="{{ route($routeExist, $est->id) }}" onclick="event.stopPropagation();" class="text-xs font-bold text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 underline flex items-center gap-0.5">
                                     Детальніше <i class="fa-solid fa-angle-right text-[10px]"></i>
@@ -329,8 +434,9 @@
                         </div>
                     </div>
                 @empty
-                    <div class="bg-orange-50/60 dark:bg-orange-950/10 border border-orange-100 dark:border-orange-900/30 p-5 rounded-2xl text-center space-y-2 mt-4">
-                        <h4 class="font-bold text-sm">Закладів не знайдено</h4>
+                    <div class="bg-orange-50/60 dark:bg-orange-950/10 border border-orange-100 dark:border-orange-900/30 p-6 rounded-2xl text-center space-y-2 mt-4">
+                        <i class="fa-solid fa-map-location-dot text-3xl text-orange-400 dark:text-orange-500/70"></i>
+                        <h4 class="font-bold text-sm pt-1">Закладів не знайдено</h4>
                         <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                             У місті <span class="font-bold text-orange-600">{{ request('city') ?: 'обраному регіоні' }}</span> немає об'єктів з обраними фільтрами.
                         </p>
@@ -339,7 +445,7 @@
             </div>
         </div>
 
-        <div id="map" class="flex-1 h-full z-0"></div>
+        <div id="map" class="w-full h-[45vh] lg:w-auto lg:flex-1 lg:h-full z-0"></div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -387,12 +493,22 @@
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
+        window.addEventListener('resize', () => map.invalidateSize());
+
         let userLiveMarker = null;
         const blueUserIcon = L.divIcon({
             className: 'custom-user-marker',
             html: '<div class="user-location-pulse"></div>',
             iconSize: [14, 14],
             iconAnchor: [7, 7]
+        });
+
+        const gastroIcon = L.divIcon({
+            className: 'gastro-pin',
+            html: '<i class="fa-solid fa-location-dot"></i>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+            popupAnchor: [0, -28]
         });
 
         if (searchLat && searchLng) {
@@ -409,24 +525,31 @@
 
             if (!estLat || !estLng) return;
 
-            const marker = L.marker([parseFloat(estLat), parseFloat(estLng)]).addTo(map);
+            const marker = L.marker([parseFloat(estLat), parseFloat(estLng)], { icon: gastroIcon }).addTo(map);
             marker.bindPopup(`
                 <div style="font-family: inherit; padding: 2px; max-width: 200px;">
                     <img src="${est.compiled_first_photo}" style="width: 100%; h-auto; max-height: 80px; object-cover: cover; border-radius: 8px; margin-bottom: 6px;" alt="">
                     <strong style="font-size: 14px; color: #ea580c; display: block; margin-bottom: 2px;">${est.name}</strong>
                     <span style="font-size: 11px; display: block; margin-bottom: 6px; color: #4b5563;">${estAddress}</span>
                     <span style="font-size: 12px; font-weight: 700; display: block;">Середній чек: <span style="color:#ea580c;">${estCheck} грн</span></span>
-                    <a href="/establishment/${est.id}" style="display: inline-block; margin-top: 10px; font-size: 11px; font-weight: 800; color: #f97316;">Детальніше →</a>
+                    <a href="/establishment/${est.id}" style="display: inline-block; margin-top: 10px; font-size: 11px; font-weight: 800; color: #f97316;">Детальніше <i class="fa-solid fa-angle-right"></i></a>
                 </div>
             `);
             markers[`${estLat}_${estLng}`] = marker;
             if (index === 0 && !(searchLat && searchLng)) marker.openPopup();
         });
 
-        function focusOnMap(lat, lng) {
+        function focusOnMap(cardEl, lat, lng) {
+            if (cardEl) {
+                document.querySelectorAll('.establishment-card.is-active').forEach(c => c.classList.remove('is-active'));
+                cardEl.classList.add('is-active');
+            }
             if (!lat || !lng) return;
             map.setView([lat, lng], 16);
             if (markers[`${lat}_${lng}`]) markers[`${lat}_${lng}`].openPopup();
+            if (window.innerWidth < 1024) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
 
         function getLocation() {
@@ -447,6 +570,23 @@
             sliderRoot.setAttribute('data-current', current);
             container.style.transform = `translateX(-${current * 33.333}%)`;
         }
+
+        function toggleClearSearch() {
+            const input = document.getElementById('search');
+            const btn = document.getElementById('clearSearchBtn');
+            if (!input || !btn) return;
+            btn.classList.toggle('hidden', !input.value);
+            btn.classList.toggle('flex', !!input.value);
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('search');
+            input.value = '';
+            input.focus();
+            toggleClearSearch();
+        }
+
+        toggleClearSearch();
     </script>
 </body>
 </html>

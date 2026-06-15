@@ -90,8 +90,8 @@
 <body class="font-sans antialiased min-h-screen transition-colors duration-200">
 
     <nav class="h-16 flex items-center justify-between px-6 border-b transition-colors duration-200">
-        <a href="/" class="text-xl font-bold text-orange-500 tracking-tight flex items-center gap-2">
-            ГастроМапа Адмін
+        <a href="/" class="text-xl font-black text-orange-500 tracking-tight flex items-center gap-2">
+            <i class="fa-solid fa-utensils text-lg"></i>ГастроМапа Адмін
         </a>
         <div class="flex items-center gap-4">
             <button onclick="toggleTheme()" type="button" class="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-800 text-gray-300 hover:text-orange-500 transition cursor-pointer border border-gray-700">
@@ -146,13 +146,12 @@
             @endif
 
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-xs">
+                <table class="w-full text-left border-collapse text-xs [&_td]:align-middle">
                     <thead>
                         <tr class="border-b text-gray-400 font-bold uppercase tracking-wider">
                             <th class="py-3 px-4">Користувач</th>
                             <th class="py-3 px-4">Email</th>
-                            <th class="py-3 px-4">Поточна роль</th>
-                            <th class="py-3 px-4">Змінити роль</th>
+                            <th class="py-3 px-4">Роль</th>
                             <th class="py-3 px-4 text-right">Керування</th>
                         </tr>
                     </thead>
@@ -161,18 +160,24 @@
                             @foreach($users as $user)
                                 <tr>
                                     <td class="py-3 px-4 font-bold text-white">
-                                        @if(strtolower($user->role) === 'admin') 👤 @elseif(strtolower($user->role) === 'owner') 🟢 @else 🔥 @endif {{ $user->name }}
+                                        @if(strtolower($user->role) === 'admin') <i class="fa-solid fa-user-shield text-orange-400"></i> @elseif(strtolower($user->role) === 'owner') <i class="fa-solid fa-user-tie text-green-500"></i> @else <i class="fa-solid fa-user text-gray-400"></i> @endif {{ $user->name }}
                                     </td>
                                     <td class="py-3 px-4">{{ $user->email }}</td>
                                     <td class="py-3 px-4">
-                                        <span class="px-2 py-0.5 rounded text-[10px] uppercase font-mono bg-slate-800 text-gray-300">
-                                            {{ $user->role }}
-                                        </span>
-                                    </td>
-                                    <td class="py-3 px-4">
-                                        <form id="role-form-{{ $user->id }}" action="{{ route('admin.user.role', $user->id) }}" method="POST" class="inline-flex gap-1.5 items-center">
+                                        @php
+                                            $r = strtolower($user->role);
+                                            $roleMap = [
+                                                'admin' => ['Адмін', 'fa-user-shield', 'bg-rose-500/15 text-rose-600 border-rose-500/30'],
+                                                'owner' => ['Власник', 'fa-user-tie', 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30'],
+                                            ];
+                                            [$roleLabel, $roleIcon, $roleBadge] = $roleMap[$r] ?? ['Гість', 'fa-user', 'bg-slate-500/20 text-slate-500 border-slate-500/40'];
+                                        @endphp
+                                        <form id="role-form-{{ $user->id }}" action="{{ route('admin.user.role', $user->id) }}" method="POST" class="inline-flex gap-2 items-center">
                                             @csrf
-                                            <select name="role" onchange="document.getElementById('role-form-{{ $user->id }}').submit();" class="border rounded px-2 py-1 bg-slate-900 text-white outline-none text-[11px] cursor-pointer">
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider {{ $roleBadge }}">
+                                                <i class="fa-solid {{ $roleIcon }}"></i> {{ $roleLabel }}
+                                            </span>
+                                            <select name="role" onchange="document.getElementById('role-form-{{ $user->id }}').submit();" class="border border-slate-600 rounded-lg px-2 py-1 bg-slate-900 text-white outline-none text-[11px] cursor-pointer">
                                                 <option value="user" {{ strtolower($user->role) === 'user' ? 'selected' : '' }}>Гість (User)</option>
                                                 <option value="owner" {{ strtolower($user->role) === 'owner' ? 'selected' : '' }}>Власник (Owner)</option>
                                                 <option value="admin" {{ strtolower($user->role) === 'admin' ? 'selected' : '' }}>Адмін (Admin)</option>
@@ -184,7 +189,7 @@
                                         @if(Auth::id() !== $user->id)
                                             <form action="{{ route('admin.user.delete', $user->id) }}" method="POST" onsubmit="return confirm('Видалити користувача?')">
                                                 @csrf @method('DELETE')
-                                                <button type="submit" class="text-red-500 font-bold hover:underline cursor-pointer">❌ Забанити</button>
+                                                <button type="submit" class="text-red-500 font-bold hover:underline cursor-pointer"><i class="fa-solid fa-ban"></i> Забанити</button>
                                             </form>
                                         @else
                                             <span class="text-gray-500 italic text-[11px]">Це Ви</span>
@@ -205,7 +210,7 @@
         <div class="admin-box p-6 rounded-xl shadow-sm border space-y-4 transition-colors duration-200">
             <h2 class="text-lg font-bold text-amber-500">Заявки на публікацію закладів</h2>
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-xs">
+                <table class="w-full text-left border-collapse text-xs [&_td]:align-middle">
                     <tbody class="divide-y">
                         @if(isset($establishments) && $establishments->where('is_approved', false)->count() > 0)
                             @foreach($establishments->where('is_approved', false) as $est)
@@ -235,9 +240,9 @@
         </div>
 
         <div class="admin-box p-6 rounded-xl shadow-sm border space-y-4 transition-colors duration-200">
-            <h2 class="text-lg font-bold text-rose-400">💬 Стрічка останніх відгуків (Модерація спаму)</h2>
+            <h2 class="text-lg font-bold text-rose-400"><i class="fa-solid fa-comments"></i> Стрічка останніх відгуків (Модерація спаму)</h2>
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-xs">
+                <table class="w-full text-left border-collapse text-xs [&_td]:align-middle">
                     <tbody class="divide-y">
                         @if(isset($reviews) && $reviews->count() > 0)
                             @foreach($reviews as $review)
@@ -266,7 +271,7 @@
         <div class="admin-box p-6 rounded-xl shadow-sm border space-y-4 transition-colors duration-200">
             <h2 class="text-lg font-bold text-green-400">Повний реєстр закладів</h2>
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-xs">
+                <table class="w-full text-left border-collapse text-xs [&_td]:align-middle">
                     <thead>
                         <tr class="border-b text-gray-400 font-bold uppercase tracking-wider">
                             <th class="py-3 px-4">Назва</th>
@@ -282,19 +287,30 @@
                                 <tr>
                                     <td class="py-4 px-4 font-bold text-white">
                                         {{ $est->name }}
-                                        <span class="bg-slate-800 text-[10px] px-1.5 py-0.5 rounded text-gray-400 ml-2 uppercase font-mono">{{ $est->type ?? 'заклад' }}</span>
+                                        @php
+                                            $tt = strtolower($est->type ?? '');
+                                            $tMap = [
+                                                'cafe'       => ['Кафе', 'fa-mug-saucer', 'bg-amber-500/15 text-amber-600 border-amber-500/30'],
+                                                'restaurant' => ['Ресторан', 'fa-utensils', 'bg-rose-500/15 text-rose-600 border-rose-500/30'],
+                                                'pub'        => ['Паб', 'fa-beer-mug-empty', 'bg-violet-500/15 text-violet-600 border-violet-500/30'],
+                                            ];
+                                            [$tLabel, $tIcon, $tBadge] = $tMap[$tt] ?? [($est->type ?? 'заклад'), 'fa-shop', 'bg-slate-500/20 text-slate-500 border-slate-500/40'];
+                                        @endphp
+                                        <span class="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider {{ $tBadge }}"><i class="fa-solid {{ $tIcon }} text-[9px]"></i>{{ $tLabel }}</span>
                                     </td>
                                     <td class="py-4 px-4 text-gray-300">{{ $est->address }}</td>
                                     <td class="py-4 px-4 text-amber-400 font-bold">{{ $est->average_check ?? $est->price ?? '—' }} ₴</td>
                                     <td class="py-4 px-4 text-gray-400">
-                                        {{ !empty($est->menu_pdf) ? '🟢 Наявне' : '⚫ Відсутнє' }}
+                                        @if(!empty($est->menu_pdf))<i class="fa-solid fa-circle-check text-green-500"></i> Наявне @else<i class="fa-solid fa-circle-xmark text-gray-500"></i> Відсутнє @endif
                                     </td>
-                                    <td class="py-4 px-4 text-right flex justify-end gap-2">
-                                        <a href="/establishment/{{ $est->id }}" target="_blank" class="bg-orange-600 hover:bg-orange-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs cursor-pointer text-center flex items-center">📄 Дивитись</a>
-                                        <form action="{{ route('admin.establishment.delete', $est->id) }}" method="POST" onsubmit="return confirm('Видалити цей заклад?')">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="text-red-500 font-bold hover:underline text-xs cursor-pointer">Видалити</button>
-                                        </form>
+                                    <td class="py-4 px-4 align-middle">
+                                        <div class="flex justify-end items-center gap-2">
+                                            <a href="/establishment/{{ $est->id }}" target="_blank" class="bg-orange-600 hover:bg-orange-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs cursor-pointer text-center flex items-center gap-1.5"><i class="fa-solid fa-file-lines"></i> Дивитись</a>
+                                            <form action="{{ route('admin.establishment.delete', $est->id) }}" method="POST" onsubmit="return confirm('Видалити цей заклад?')">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="text-red-500 font-bold hover:underline text-xs cursor-pointer">Видалити</button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

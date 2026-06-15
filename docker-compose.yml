@@ -1,0 +1,40 @@
+# Локальна БД для GastroMap (PostgreSQL — як на проді).
+# Значення підставляються з .env проєкту (ті самі DB_* змінні, що й Laravel),
+# тож креденшіали БД і застосунку завжди збігаються. Дефолти задані через :-.
+services:
+  db:
+    image: postgres:16
+    container_name: gastromap_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${DB_DATABASE:-gastromap}"
+      POSTGRES_USER: "${DB_USERNAME:-gastromap}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-secret}"
+    ports:
+      # Публікуємо порт БД на хост, щоб `php artisan serve` бачив її на 127.0.0.1
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - gastromap_db_data:/var/lib/postgresql/data
+    healthcheck:
+      # pg_isready повертає 0, коли сервер готовий приймати з'єднання.
+      # Подвійний $$ — це екранований $ для docker compose.
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  # Легкий веб-інтерфейс до БД (необов'язковий): http://localhost:8081
+  # У формі входу: System = PostgreSQL, Server = db, далі креденшіали з .env
+  adminer:
+    image: adminer:latest
+    container_name: gastromap_adminer
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${ADMINER_PORT:-8081}:8080"
+
+volumes:
+  gastromap_db_data:

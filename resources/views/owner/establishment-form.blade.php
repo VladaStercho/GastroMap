@@ -5,10 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $establishment ? 'Редагування: ' . $establishment->name : 'Додати заклад' }} | ГастроМапа</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @custom-variant dark (&:where(.dark, .dark *));
+    </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
-        :root { --bg-main: #f9fafb; --bg-card: #ffffff; --border-color: #e5e7eb; --text-main: #111827; }
+        :root { --bg-main: #eef1f5; --bg-card: #ffffff; --border-color: #cbd5e1; --text-main: #0f172a; }
         html.dark { --bg-main: #0b0f19; --bg-card: #111827; --border-color: #1f2937; --text-main: #f3f4f6; }
         body { background-color: var(--bg-main) !important; color: var(--text-main) !important; }
         nav, .card { background-color: var(--bg-card) !important; border-color: var(--border-color) !important; }
@@ -47,7 +50,7 @@
 
         <div class="mb-6">
             <h1 class="text-3xl font-black tracking-tight">
-                {{ $establishment ? '✏️ Редагування закладу' : '🏪 Додати новий заклад' }}
+                @if($establishment)<i class="fa-solid fa-pen-to-square"></i> Редагування закладу @else<i class="fa-solid fa-store"></i> Додати новий заклад @endif
             </h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 @if(Auth::user()->isAdmin())
@@ -95,9 +98,9 @@
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Тип закладу *</label>
                     <select name="type" class="form-input" required>
                         <option value="">— Оберіть тип —</option>
-                        <option value="cafe" {{ old('type', $establishment->type ?? '') === 'cafe' ? 'selected' : '' }}>☕ Кав'ярня</option>
-                        <option value="restaurant" {{ old('type', $establishment->type ?? '') === 'restaurant' ? 'selected' : '' }}>🍽 Ресторан</option>
-                        <option value="pub" {{ old('type', $establishment->type ?? '') === 'pub' ? 'selected' : '' }}>🍺 Паб / Бар</option>
+                        <option value="cafe" {{ old('type', $establishment->type ?? '') === 'cafe' ? 'selected' : '' }}>Кав'ярня</option>
+                        <option value="restaurant" {{ old('type', $establishment->type ?? '') === 'restaurant' ? 'selected' : '' }}>Ресторан</option>
+                        <option value="pub" {{ old('type', $establishment->type ?? '') === 'pub' ? 'selected' : '' }}>Паб / Бар</option>
                     </select>
                 </div>
 
@@ -184,7 +187,7 @@
                 </div>
                 <p class="text-[11px] text-gray-400">
                     <i class="fa-solid fa-circle-info mr-1"></i>
-                    Координати можна знайти на Google Maps: правою кнопкою → «Що тут?»
+                    Координати можна знайти на Google Maps: правою кнопкою <i class="fa-solid fa-arrow-right-long text-xs"></i> «Що тут?»
                 </p>
             </div>
 
