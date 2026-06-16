@@ -113,42 +113,20 @@
             <i class="fa-solid fa-utensils text-lg"></i>ГастроМапа
         </a>
         <div class="flex items-center gap-3">
-            {{-- Бейдж ролі --}}
-            @if(auth()->user()->isAdmin())
-                <span class="text-xs font-bold px-3 py-1 rounded-full bg-red-500/10 text-red-500 border border-red-500/20">
-                    <i class="fa-solid fa-shield-halved mr-1"></i>Адмін
-                </span>
-            @elseif(auth()->user()->isOwner())
-                <span class="text-xs font-bold px-3 py-1 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
-                    <i class="fa-solid fa-store mr-1"></i>Власник
-                </span>
-            @else
-                <span class="text-xs font-bold px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                    <i class="fa-solid fa-user mr-1"></i>Користувач
-                </span>
-            @endif
-
             <button type="button" onclick="toggleTheme()" aria-label="Перемкнути тему" class="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 border border-gray-200 dark:border-gray-700 transition cursor-pointer">
                 <i class="fa-solid fa-sun text-sm theme-sun"></i>
                 <i class="fa-solid fa-moon text-sm theme-moon"></i>
             </button>
 
             @if(auth()->user()->isAdmin())
-                <a href="{{ route('admin.dashboard') }}" class="text-sm font-bold bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition">
+                <a href="{{ route('admin.dashboard') }}" class="hidden sm:flex text-sm font-bold bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl items-center gap-2 transition shadow-md shadow-red-500/10">
                     <i class="fa-solid fa-shield-halved text-xs"></i> Адмін-панель
                 </a>
             @endif
 
-            <a href="/" class="text-sm font-bold bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                <i class="fa-solid fa-house text-xs"></i> На головну
+            <a href="/" aria-label="На головну" class="text-sm font-bold bg-gray-100 dark:bg-gray-800 w-10 h-10 sm:w-auto sm:px-4 flex items-center justify-center rounded-xl gap-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer">
+                <i class="fa-solid fa-map-location-dot text-sm"></i> <span class="hidden sm:inline">На головну</span>
             </a>
-
-            <form action="{{ route('logout') }}" method="POST" class="inline">
-                @csrf
-                <button type="submit" class="text-sm bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold transition shadow-md shadow-red-500/10 cursor-pointer">
-                    Вийти
-                </button>
-            </form>
         </div>
     </nav>
 
@@ -434,6 +412,41 @@
             </div>
             @endif
 
+            {{-- Кнопка виходу під усіма даними --}}
+            <div class="mt-8 border-t border-gray-200 dark:border-gray-800 pt-6 flex justify-center pb-8">
+                <button type="button" onclick="document.getElementById('logoutModal').classList.remove('hidden')" class="px-6 py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl font-bold transition flex items-center gap-2 cursor-pointer shadow-sm">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Вийти з акаунта
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Модальне вікно виходу --}}
+    <div id="logoutModal" class="hidden fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4 relative transform transition-transform">
+            <button type="button" onclick="document.getElementById('logoutModal').classList.add('hidden')" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-red-500 transition cursor-pointer">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div class="text-center">
+                <div class="w-16 h-16 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center text-3xl mx-auto mb-4">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </div>
+                <h3 class="text-lg font-black mb-2">Вийти з акаунта?</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Ви дійсно бажаєте вийти зі свого особистого кабінету?</p>
+                
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="document.getElementById('logoutModal').classList.add('hidden')" class="flex-1 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold transition cursor-pointer">
+                        Ні, залишитись
+                    </button>
+                    <form action="{{ route('logout') }}" method="POST" class="flex-1">
+                        @csrf
+                        <button type="submit" class="w-full px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition shadow-md shadow-red-500/20 cursor-pointer">
+                            Так, вийти
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 

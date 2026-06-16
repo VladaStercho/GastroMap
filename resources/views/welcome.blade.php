@@ -262,11 +262,11 @@
 
         <div class="sidebar-container w-full lg:w-96 lg:flex-none lg:min-h-0 border-t lg:border-t-0 lg:border-r flex flex-col lg:h-full shadow-xl z-10 transition-colors duration-300">
 
-            <form action="{{ route('home') }}" method="GET" id="filterForm">
+            <form action="{{ route('home') }}" method="GET" id="filterForm" class="sticky top-16 z-[50] lg:static lg:z-auto">
                 <input type="hidden" name="lat" id="userLat" value="{{ request('lat') }}">
                 <input type="hidden" name="lng" id="userLng" value="{{ request('lng') }}">
 
-                <div class="flex items-center gap-2 p-3 lg:p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-950/20 transition-colors duration-300">
+                <div class="backdrop-blur-md flex items-center gap-2 p-3 lg:p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/90 dark:bg-gray-950/90 transition-colors duration-300">
                     <div class="relative flex-1">
                         <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
                             <i class="fa-solid fa-magnifying-glass text-xs"></i>
@@ -445,7 +445,7 @@
             </div>
         </div>
 
-        <div id="map" class="w-full h-[45vh] lg:w-auto lg:flex-1 lg:h-full z-0"></div>
+        <div id="map" class="w-full h-[65vh] lg:w-auto lg:flex-1 lg:h-full z-0"></div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

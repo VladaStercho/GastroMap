@@ -63,6 +63,16 @@
         html:not(.light) .theme-moon { display: none !important; }
         html.light .theme-sun { display: none !important; }
         html.light .theme-moon { display: block !important; }
+
+        .nav-btn {
+            background-color: var(--bg-main) !important;
+            color: var(--text-muted) !important;
+            border-color: var(--border-color) !important;
+        }
+        .nav-btn:hover {
+            color: var(--text-main) !important;
+            border-color: var(--text-muted) !important;
+        }
     </style>
 
     <script>
@@ -94,12 +104,14 @@
             <i class="fa-solid fa-utensils text-lg"></i>ГастроМапа Адмін
         </a>
         <div class="flex items-center gap-4">
-            <button onclick="toggleTheme()" type="button" class="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-800 text-gray-300 hover:text-orange-500 transition cursor-pointer border border-gray-700">
-                <i class="fa-solid fa-sun text-sm theme-sun"></i>
-                <i class="fa-solid fa-moon text-sm theme-moon"></i>
+            <button onclick="toggleTheme()" type="button" class="nav-btn w-9 h-9 flex items-center justify-center rounded-xl transition cursor-pointer border">
+                <i class="fa-solid fa-sun text-sm theme-sun hover:text-orange-500"></i>
+                <i class="fa-solid fa-moon text-sm theme-moon hover:text-orange-500"></i>
             </button>
 
-            <a href="/" class="text-sm text-gray-400 hover:text-white transition">На мапу</a>
+            <a href="/" aria-label="На мапу" class="nav-btn text-sm font-bold w-9 h-9 sm:w-auto sm:px-4 flex items-center justify-center rounded-xl gap-2 transition border cursor-pointer">
+                <i class="fa-solid fa-map-location-dot text-sm"></i> <span class="hidden sm:inline">На мапу</span>
+            </a>
             <form action="{{ route('logout') }}" method="POST" class="inline">
                 @csrf
                 <button type="submit" class="text-sm font-bold bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg cursor-pointer transition">Вийти</button>
